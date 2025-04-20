@@ -422,5 +422,5 @@ const PORT = process.env.PORT || 5000;
 const HOST = process.env.EXPRESS_HOST || '0.0.0.0';
 
 app.listen(PORT, HOST, () => {
-  console.log(`Server running on port ${PORT} and accessible on the network at http://${HOST}:${PORT}`);
+  console.log(`Server is running on port ${PORT} and accessible on the network at http://${HOST}:${PORT}`);
 });
