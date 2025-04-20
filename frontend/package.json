@@ -13,7 +13,6 @@
     "dev:full": "concurrently \"npm run dev\" \"npm run server\""
   },
   "dependencies": {
-    "vite": "^5.4.1",
     "@google/generative-ai": "^0.2.1",
     "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-accordion": "^1.2.0",
@@ -93,8 +92,8 @@
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.11",
     "typescript": "^5.5.3",
-    "typescript-eslint": "^8.0.1"
-  
+    "typescript-eslint": "^8.0.1",
+    "vite": "^5.4.1"
   },
   "description": "",
   "main": "eslint.config.js",
