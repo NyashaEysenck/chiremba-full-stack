@@ -378,33 +378,6 @@ app.post('/api/init-admin', async (req, res) => {
 });
 
 
-// 1. Start FastAPI Server
-const startFastAPI = () => {
-  const fastApiPath = path.join(__dirname, '../backend-image-diagnosis/hostlocal.py');
-  
-  const fastApiProcess = spawn('python', [fastApiPath], {
-    stdio: 'inherit',
-    shell: true // Needed for Windows compatibility
-  });
-
-  fastApiProcess.on('error', (err) => {
-    console.error('Failed to start FastAPI:', err);
-  });
-
-  fastApiProcess.on('exit', (code) => {
-    console.log(`FastAPI process exited with code ${code}`);
-  });
-
-  return fastApiProcess;
-};
-
-const fastApiProcess = startFastAPI();
-
-// 2. Cleanup on Express shutdown
-process.on('exit', () => {
-  fastApiProcess.kill();
-  console.log('Terminated FastAPI server');
-});
 
 
 // Serve static files from the frontend build
