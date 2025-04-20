@@ -1,0 +1,40 @@
+# Ignore version control system files
+.git
+.gitignore
+
+# Node and Python dependencies
+node_modules/
+frontend/node_modules/
+backend-server/node_modules/
+backend-image-diagnosis/venv/
+backend-image-diagnosis/env/
+__pycache__/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs and coverage
+*.log
+*.coverage
+coverage/
+.nyc_output/
+
+# Build output
+dist/
+build/
+frontend/dist/
+backend-server/dist/
+
+# Environment files
+.env
+.env.*
+frontend/.env
+frontend/.env.*
+backend-server/.env
+backend-server/.env.*
+backend-image-diagnosis/.env
+
+# IDE/editor folders
+.vscode/
+.idea/
