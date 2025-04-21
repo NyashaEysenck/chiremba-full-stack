@@ -1,9 +1,22 @@
 import { toast } from "@/hooks/use-toast";
 import { OpenAI } from "openai";
 
+// Function to fetch config from backend
+async function getConfig() {
+  const response = await fetch('/api/config');
+  return response.json();
+}
+
+let OPENAI_API_KEY = '';
+
+// Immediately fetch config on module load
+getConfig().then(config => {
+  OPENAI_API_KEY = config.OPENAI_API_KEY || '';
+});
+
 // Initialize the OpenAI API
 const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY, // Add your OpenAI key in env
+  apiKey: OPENAI_API_KEY,
   dangerouslyAllowBrowser: true, // Required for client-side usage
 });
 

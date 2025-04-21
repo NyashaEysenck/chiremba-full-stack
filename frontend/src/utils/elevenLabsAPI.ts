@@ -1,6 +1,18 @@
 
 // ElevenLabs API integration for high-quality text-to-speech
-const ELEVEN_LABS_API_KEY = import.meta.env.VITE_ELEVEN_LABS_API_KEY || '';
+let ELEVEN_LABS_API_KEY = '';
+
+// Function to fetch config from backend
+async function getConfig() {
+  const response = await fetch('/api/config');
+  return response.json();
+}
+
+// Immediately fetch config on module load
+getConfig().then(config => {
+  ELEVEN_LABS_API_KEY = config.ELEVEN_LABS_API_KEY || '';
+});
+
 const ELEVEN_LABS_VOICE_ID = 'tnSpp4vdxKPjI9w0GnoV'; // Sarah voice
 
 /**
@@ -12,8 +24,7 @@ export const textToSpeech = async (text: string): Promise<string> => {
   try {
     // Check if API key is available
     if (!ELEVEN_LABS_API_KEY) {
-      console.warn('ElevenLabs API key not found. Using browser TTS instead.');
-      return '';
+      throw new Error('Eleven Labs API key is not set.');
     }
 
     const response = await fetch(

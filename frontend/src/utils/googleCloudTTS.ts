@@ -1,8 +1,20 @@
 // Google Cloud TTS direct REST API integration (for dev/testing only)
 // WARNING: Do NOT expose your API key in production!
 
-const GOOGLE_CLOUD_TTS_API_KEY = import.meta.env.VITE_GOOGLE_CLOUD_TTS_API_KEY || '';
-const GOOGLE_CLOUD_TTS_ENDPOINT = `https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_CLOUD_TTS_API_KEY}`;
+// Function to fetch config from backend
+async function getConfig() {
+  const response = await fetch('/api/config');
+  return response.json();
+}
+
+let GOOGLE_CLOUD_TTS_API_KEY = '';
+let GOOGLE_CLOUD_TTS_ENDPOINT = '';
+
+// Immediately fetch config on module load
+getConfig().then(config => {
+  GOOGLE_CLOUD_TTS_API_KEY = config.GOOGLE_CLOUD_TTS_API_KEY || '';
+  GOOGLE_CLOUD_TTS_ENDPOINT = `https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_CLOUD_TTS_API_KEY}`;
+});
 
 /**
  * Converts text to speech using Google Cloud TTS API
@@ -12,8 +24,7 @@ const GOOGLE_CLOUD_TTS_ENDPOINT = `https://texttospeech.googleapis.com/v1/text:s
 export const textToSpeech = async (text: string): Promise<string> => {
   try {
     if (!GOOGLE_CLOUD_TTS_API_KEY) {
-      console.warn('Google Cloud TTS API key not found.');
-      return '';
+      throw new Error('Google Cloud TTS API key is not set.');
     }
     if (!text) {
       console.warn('No text provided for TTS.');

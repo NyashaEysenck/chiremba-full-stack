@@ -1,7 +1,18 @@
 // OpenAI API integration for high-quality text-to-speech
 import OpenAI from 'openai';
 
-const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || '';
+// Function to fetch config from backend
+async function getConfig() {
+  const response = await fetch('/api/config');
+  return response.json();
+}
+
+let OPENAI_API_KEY = '';
+
+// Immediately fetch config on module load
+getConfig().then(config => {
+  OPENAI_API_KEY = config.OPENAI_API_KEY || '';
+});
 
 // Initialize the OpenAI client
 const openai = new OpenAI({
@@ -18,8 +29,7 @@ export const textToSpeech = async (text: string): Promise<string> => {
   try {
     // Check if API key is available
     if (!OPENAI_API_KEY) {
-      console.warn('OpenAI API key not found. Using browser TTS instead.');
-      return '';
+      throw new Error('OpenAI API key is not set.');
     }
 
     console.log('Generating speech with OpenAI...');

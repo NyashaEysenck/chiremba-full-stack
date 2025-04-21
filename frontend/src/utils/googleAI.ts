@@ -1,8 +1,18 @@
 import { toast } from "@/hooks/use-toast";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// The API key would ideally be in a Supabase function, but we're using the provided key directly for now
-const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
+// Function to fetch config from backend
+async function getConfig() {
+  const response = await fetch('/api/config');
+  return response.json();
+}
+
+let GOOGLE_API_KEY = '';
+
+// Immediately fetch config on module load
+getConfig().then(config => {
+  GOOGLE_API_KEY = config.GOOGLE_API_KEY || '';
+});
 
 // Initialize the Google Generative AI with our API key
 const genAI = new GoogleGenerativeAI(GOOGLE_API_KEY);

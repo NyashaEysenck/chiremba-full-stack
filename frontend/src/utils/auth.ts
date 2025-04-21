@@ -156,6 +156,18 @@ export const getCurrentUser = async (): Promise<User | null> => {
   }
 };
 
+// Function to fetch config from backend
+async function getConfig() {
+  const response = await fetch('/api/config');
+  return response.json();
+}
+
+let EXPRESS_API_URL = '';
+
+getConfig().then(config => {
+  EXPRESS_API_URL = config.EXPRESS_API_URL || '';
+});
+
 /**
  * Ensure that the admin user exists in the system
  * This is called when the app initializes to make sure there's always an admin user
@@ -164,10 +176,10 @@ export const ensureAdminUser = async (): Promise<boolean> => {
   try {
     // Use environment variable with fallback for the API URL
     const apiUrl = import.meta.env.PROD
-      ? `${import.meta.env.VITE_EXPRESS_API_URL}/api`
-      : import.meta.env.VITE_EXPRESS_API_URL 
-        ? `${import.meta.env.VITE_EXPRESS_API_URL}/api`
-        : `http://${window.location.hostname}:5000/api`;
+      ? `${EXPRESS_API_URL}/api`
+      : EXPRESS_API_URL
+        ? `${EXPRESS_API_URL}/api`
+        : '';
         
     // Call the init-admin endpoint to ensure admin user exists
     const response = await fetch(`${apiUrl}/init-admin`, {
