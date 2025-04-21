@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F5E9E1"/>
+      <stop offset="100%" stop-color="#81B29A"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="220" cy="315" r="120" fill="#E07A5F" />
+  <rect x="370" y="445" width="460" height="60" rx="30" fill="#F4A259" />
+  <text x="600" y="210" text-anchor="middle" font-size="72" font-family="Segoe UI, Arial, sans-serif" fill="#222" font-weight="bold">Chiremba Health</text>
+  <text x="600" y="300" text-anchor="middle" font-size="38" font-family="Segoe UI, Arial, sans-serif" fill="#222">AI Health Diagnosis &amp; Virtual Consultation</text>
+  <text x="600" y="370" text-anchor="middle" font-size="28" font-family="Segoe UI, Arial, sans-serif" fill="#444">Accessible • Accurate • For Zimbabwe &amp; Beyond</text>
+  <text x="600" y="485" text-anchor="middle" font-size="36" font-family="Segoe UI, Arial, sans-serif" fill="#fff" font-weight="bold">chiremba.app</text>
+</svg>
