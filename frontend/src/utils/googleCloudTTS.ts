@@ -1,11 +1,11 @@
 // Google Cloud TTS direct REST API integration (for dev/testing only)
 // WARNING: Do NOT expose your API key in production!
 
-const BASE_URL = import.meta.env.VITE_EXPRESS_API_URL || '';
+const BASE_URL = '';
 
 // Function to fetch config from backend
 async function getConfig() {
-  const response = await fetch(`${BASE_URL}/api/config`);
+  const response = await fetch('/api/config');
   return response.json();
 }
 
@@ -25,7 +25,7 @@ getConfig().then(config => {
  */
 export const textToSpeech = async (text: string): Promise<string> => {
   try {
-    const response = await fetch(`${BASE_URL}/api/ai/google/tts`, {
+    const response = await fetch('/api/ai/google/tts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text }),

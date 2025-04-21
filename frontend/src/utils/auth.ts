@@ -22,11 +22,15 @@ export interface AuthResponse {
 export const signIn = async (email: string, password: string): Promise<AuthResponse> => {
   try {
     // Call the MongoDB API to login
-    const response = await mongoAPI.auth.login(email, password);
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
     
     return {
       success: true,
-      user: response.user
+      user: await response.json()
     };
   } catch (error: any) {
     console.error('Login error:', error);
@@ -55,7 +59,10 @@ export const signIn = async (email: string, password: string): Promise<AuthRespo
 export const signOut = async (): Promise<{ success: boolean }> => {
   try {
     // Call the MongoDB API to logout
-    mongoAPI.auth.logout();
+    await fetch('/api/auth/logout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
     
     return { success: true };
   } catch (error) {
@@ -76,7 +83,11 @@ export const createAccount = async (
   try {
     // For staff/admin accounts, use the users API to create with specific role
     if (role === 'staff' || role === 'admin') {
-      await mongoAPI.users.createUser({ email, password, name, role });
+      await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name, role }),
+      });
       
       return {
         success: true,
@@ -85,11 +96,15 @@ export const createAccount = async (
     } 
     
     // For regular users, use the register endpoint
-    const response = await mongoAPI.auth.register(email, password, name);
+    const response = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, name }),
+    });
     
     return {
       success: true,
-      user: response.user
+      user: await response.json()
     };
   } catch (error: any) {
     console.error('Account creation error:', error);
@@ -106,7 +121,10 @@ export const createAccount = async (
 export const deleteUser = async (userId: string): Promise<{ success: boolean; message?: string }> => {
   try {
     // Call the MongoDB API to delete user
-    await mongoAPI.users.deleteUser(userId);
+    await fetch(`/api/users/${userId}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+    });
     
     return {
       success: true,
@@ -127,7 +145,11 @@ export const deleteUser = async (userId: string): Promise<{ success: boolean; me
 export const assignAdminRole = async (userId: string): Promise<{ success: boolean; message?: string }> => {
   try {
     // Call the MongoDB API to assign admin role
-    await mongoAPI.users.assignRole(userId, 'admin');
+    await fetch(`/api/users/${userId}/role`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role: 'admin' }),
+    });
     
     return {
       success: true,
@@ -148,8 +170,8 @@ export const assignAdminRole = async (userId: string): Promise<{ success: boolea
 export const getCurrentUser = async (): Promise<User | null> => {
   try {
     // Call the MongoDB API to get current user
-    const user = await mongoAPI.auth.getCurrentUser();
-    return user;
+    const response = await fetch('/api/auth/profile');
+    return await response.json();
   } catch (error) {
     console.error('Get current user error:', error);
     return null;
@@ -162,15 +184,8 @@ export const getCurrentUser = async (): Promise<User | null> => {
  */
 export const ensureAdminUser = async (): Promise<boolean> => {
   try {
-    // Use environment variable with fallback for the API URL
-    const apiUrl = import.meta.env.PROD
-      ? `${import.meta.env.VITE_EXPRESS_API_URL}/api`
-      : import.meta.env.VITE_EXPRESS_API_URL 
-        ? `${import.meta.env.VITE_EXPRESS_API_URL}/api`
-        : `http://${window.location.hostname}:5000/api`;
-        
     // Call the init-admin endpoint to ensure admin user exists
-    const response = await fetch(`${apiUrl}/init-admin`, {
+    const response = await fetch('/api/init-admin', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
