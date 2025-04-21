@@ -20,7 +20,11 @@ Thumbs.db
 coverage/
 .nyc_output/
 
- 
+# Build output
+dist/
+build/
+frontend/dist/
+backend-server/dist/
 
 # Environment files
 .env
