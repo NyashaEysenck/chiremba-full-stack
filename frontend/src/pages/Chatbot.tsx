@@ -56,7 +56,7 @@ const Chatbot = () => {
   const [isPaused, setIsPaused] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [autoplayEnabled, setAutoplayEnabled] = useState(false);
-  const [useEnhancedVoice, setUseEnhancedVoice] = useState(true);
+  const [useEnhancedVoice, setUseEnhancedVoice] = useState(false);
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
   const [currentMessageId, setCurrentMessageId] = useState<number | null>(null);
   const [chatId, setChatId] = useState<string>(uuidv4());
