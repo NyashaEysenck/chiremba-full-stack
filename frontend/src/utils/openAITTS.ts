@@ -1,10 +1,4 @@
-// OpenAI API integration for high-quality text-to-speech
-import OpenAI from 'openai';
-
-// Initialize the OpenAI client
-const openai = new OpenAI({
-  dangerouslyAllowBrowser: true // Required for client-side usage
-});
+ 
 
 /**
  * Converts text to speech using OpenAI's TTS API
