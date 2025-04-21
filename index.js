@@ -383,9 +383,7 @@ app.get('/api/config', (req, res) => {
     OPENAI_API_KEY: process.env.VITE_OPENAI_API_KEY || '',
     GOOGLE_API_KEY: process.env.VITE_GOOGLE_API_KEY || '',
     GOOGLE_CLOUD_TTS_API_KEY: process.env.VITE_GOOGLE_CLOUD_TTS_API_KEY || '',
-    ELEVEN_LABS_API_KEY: process.env.VITE_ELEVEN_LABS_API_KEY || '',
-    FASTAPI_URL: process.env.VITE_FASTAPI_URL || '',
-    EXPRESS_API_URL: process.env.VITE_EXPRESS_API_URL || ''
+    ELEVEN_LABS_API_KEY: process.env.VITE_ELEVEN_LABS_API_KEY || ''
   });
 });
 
