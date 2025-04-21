@@ -509,6 +509,8 @@ const Chatbot = () => {
                         </div>
                         <p className="text-xs text-gray-500">
                           Enhanced voice uses OpenAI for more natural speech. Autoplay must be enabled for automatic responses.
+                          {!import.meta.env.VITE_OPENAI_API_KEY && 
+                            " Add your API key in the .env.local file to enable this feature."}
                         </p>
                         <div className="flex items-center justify-between">
                           <button 

@@ -27,7 +27,7 @@ console.log('Environment variables loaded:', {
 
 // Initialize Express app
 const app = express();
-const FRONTEND_ORIGINS = ['https://chiremba-ai-frontend-production.up.railway.app', 'http://localhost:5173', 'https://chiremba-full-stack-160376271578.us-central1.run.app'];
+const FRONTEND_ORIGINS = ['https://chiremba-ai-frontend-production.up.railway.app', 'http://localhost:5173'];
 
 app.use(cors({
   origin: FRONTEND_ORIGINS,
@@ -377,26 +377,19 @@ app.post('/api/init-admin', async (req, res) => {
   }
 });
 
-// Serve API keys and config to frontend (non-secret, or ensure proper auth for secret)
-app.get('/api/config', (req, res) => {
-  res.json({
-    OPENAI_API_KEY: process.env.VITE_OPENAI_API_KEY || '',
-    GOOGLE_API_KEY: process.env.VITE_GOOGLE_API_KEY || '',
-    GOOGLE_CLOUD_TTS_API_KEY: process.env.VITE_GOOGLE_CLOUD_TTS_API_KEY || '',
-    ELEVEN_LABS_API_KEY: process.env.VITE_ELEVEN_LABS_API_KEY || ''
-  });
-});
-
 
 
 
 // Serve static files from the frontend build
 app.use(express.static(path.join(__dirname, 'frontend/dist')));
 
+
 // Handle SPA client-side routing - return index.html for all other routes
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'frontend/dist', 'index.html'));
 });
+
+
 // Start server
 const PORT = process.env.PORT || 5000;
 const HOST = process.env.EXPRESS_HOST || '0.0.0.0';
