@@ -1,8 +1,10 @@
 import { toast } from "@/hooks/use-toast";
 
 // Function to fetch config from backend
+const BASE_URL = import.meta.env.VITE_EXPRESS_API_URL || '';
+
 async function getConfig() {
-  const response = await fetch('/api/config');
+  const response = await fetch(`${BASE_URL}/api/config`);
   return response.json();
 }
 
@@ -19,7 +21,7 @@ const chatHistories = new Map<string, any>();
 // Proxy AI API calls to backend endpoints
 export async function generateAIResponse(prompt: string, chatId?: string): Promise<string> {
   try {
-    const response = await fetch('/api/ai/openai/chat', {
+    const response = await fetch(`${BASE_URL}/api/ai/openai/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt }),

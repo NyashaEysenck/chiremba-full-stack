@@ -1,4 +1,3 @@
-
 // ElevenLabs API integration for high-quality text-to-speech
 let ELEVEN_LABS_API_KEY = '';
 
@@ -15,6 +14,8 @@ getConfig().then(config => {
 
 const ELEVEN_LABS_VOICE_ID = 'tnSpp4vdxKPjI9w0GnoV'; // Sarah voice
 
+const BASE_URL = import.meta.env.VITE_EXPRESS_API_URL || '';
+
 /**
  * Converts text to speech using ElevenLabs API
  * @param text Text to convert to speech
@@ -22,7 +23,7 @@ const ELEVEN_LABS_VOICE_ID = 'tnSpp4vdxKPjI9w0GnoV'; // Sarah voice
  */
 export const textToSpeech = async (text: string): Promise<string> => {
   try {
-    const response = await fetch('/api/ai/elevenlabs/tts', {
+    const response = await fetch(`${BASE_URL}/api/ai/elevenlabs/tts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text }),

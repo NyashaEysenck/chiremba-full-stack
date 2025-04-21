@@ -13,10 +13,12 @@ getConfig().then(config => {
   GOOGLE_API_KEY = config.GOOGLE_API_KEY || '';
 });
 
+const BASE_URL = import.meta.env.VITE_EXPRESS_API_URL || '';
+
 // Proxy Google Generative AI (Gemini) to backend
 export async function generateAIResponse(prompt: string, chatId?: string): Promise<string> {
   try {
-    const response = await fetch('/api/ai/googleai/chat', {
+    const response = await fetch(`${BASE_URL}/api/ai/googleai/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt }),
