@@ -1,9 +1,11 @@
 // OpenAI API integration for high-quality text-to-speech
 import OpenAI from 'openai';
 
+const BASE_URL = import.meta.env.VITE_EXPRESS_API_URL || '';
+
 // Function to fetch config from backend
 async function getConfig() {
-  const response = await fetch('/api/config');
+  const response = await fetch(`${BASE_URL}/api/config`);
   return response.json();
 }
 
@@ -19,8 +21,6 @@ const openai = new OpenAI({
   apiKey: OPENAI_API_KEY,
   dangerouslyAllowBrowser: true // Required for client-side usage
 });
-
-const BASE_URL = import.meta.env.VITE_EXPRESS_API_URL || '';
 
 /**
  * Converts text to speech using OpenAI's TTS API

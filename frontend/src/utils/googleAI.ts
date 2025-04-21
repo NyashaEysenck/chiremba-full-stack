@@ -1,19 +1,19 @@
 import { toast } from "@/hooks/use-toast";
 
-// Function to fetch config from backend
-async function getConfig() {
-  const response = await fetch('/api/config');
-  return response.json();
-}
+const BASE_URL = import.meta.env.VITE_EXPRESS_API_URL || '';
 
 let GOOGLE_API_KEY = '';
+
+// Function to fetch config from backend
+async function getConfig() {
+  const response = await fetch(`${BASE_URL}/api/config`);
+  return response.json();
+}
 
 // Immediately fetch config on module load
 getConfig().then(config => {
   GOOGLE_API_KEY = config.GOOGLE_API_KEY || '';
 });
-
-const BASE_URL = import.meta.env.VITE_EXPRESS_API_URL || '';
 
 // Proxy Google Generative AI (Gemini) to backend
 export async function generateAIResponse(prompt: string, chatId?: string): Promise<string> {
@@ -66,11 +66,6 @@ Format your response for easy reading with numbered lists. Include a disclaimer 
   }
 }
 
-// Start or continue a chat session with memory
-export async function startOrContinueChat(chatId: string): Promise<void> {
-  // No-op for now, as we're proxying to the backend
-}
-
 export async function getHealthChatResponse(userMessage: string, chatId: string, language: string = "english"): Promise<string> {
   try {
     // Ensure a chat session exists (no-op for now)
@@ -116,17 +111,6 @@ export async function getHealthChatResponse(userMessage: string, chatId: string,
   }
 }
 
-// Function to clear chat history for a specific chat
-export function clearChatHistory(chatId: string): void {
-  // No-op for now, as we're proxying to the backend
-}
-
-// Placeholder function for enhanced text-to-speech (to be implemented with ElevenLabs)
-export async function getEnhancedTextToSpeech(text: string): Promise<void> {
-  // This function will be replaced by the ElevenLabs implementation
-  console.log("Enhanced TTS would process:", text);
-}
-
 // Function to load the brain tumor model (mockup for now)
 export async function loadBrainTumorModel(): Promise<void> {
   console.log("Loading brain tumor detection model...");
@@ -160,6 +144,16 @@ export async function detectBrainTumor(imageElement: HTMLImageElement): Promise<
   });
 }
 
+// Function to clear chat history for a specific chat
+export function clearChatHistory(chatId: string): void {
+  // No-op for now, as we're proxying to the backend
+}
+
+// Start or continue a chat session with memory
+export async function startOrContinueChat(chatId: string): Promise<void> {
+  // No-op for now, as we're proxying to the backend
+}
+
 // New function to analyze medical documents or images (will be implemented in future)
 export async function analyzeMedicalDocument(documentText: string): Promise<string> {
   try {
@@ -179,4 +173,10 @@ export async function analyzeMedicalDocument(documentText: string): Promise<stri
     console.error("Error analyzing medical document:", error);
     return "Sorry, there was an error analyzing this document. Please try again later.";
   }
+}
+
+// Placeholder function for enhanced text-to-speech (to be implemented with ElevenLabs)
+export async function getEnhancedTextToSpeech(text: string): Promise<void> {
+  // This function will be replaced by the ElevenLabs implementation
+  console.log("Enhanced TTS would process:", text);
 }

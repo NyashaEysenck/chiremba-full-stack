@@ -1,9 +1,11 @@
 // ElevenLabs API integration for high-quality text-to-speech
 let ELEVEN_LABS_API_KEY = '';
 
+const BASE_URL = import.meta.env.VITE_EXPRESS_API_URL || '';
+
 // Function to fetch config from backend
 async function getConfig() {
-  const response = await fetch('/api/config');
+  const response = await fetch(`${BASE_URL}/api/config`);
   return response.json();
 }
 
@@ -13,8 +15,6 @@ getConfig().then(config => {
 });
 
 const ELEVEN_LABS_VOICE_ID = 'tnSpp4vdxKPjI9w0GnoV'; // Sarah voice
-
-const BASE_URL = import.meta.env.VITE_EXPRESS_API_URL || '';
 
 /**
  * Converts text to speech using ElevenLabs API
