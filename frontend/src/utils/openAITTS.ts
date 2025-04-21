@@ -1,30 +1,49 @@
-// OpenAI TTS utility now calls backend endpoint
-const BASE_URL = import.meta.env.VITE_EXPRESS_API_URL || '';
+// OpenAI API integration for high-quality text-to-speech
+import OpenAI from 'openai';
+
+const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || '';
+
+// Initialize the OpenAI client
+const openai = new OpenAI({
+  apiKey: OPENAI_API_KEY,
+  dangerouslyAllowBrowser: true // Required for client-side usage
+});
 
 /**
- * Converts text to speech using OpenAI's TTS API via backend
+ * Converts text to speech using OpenAI's TTS API
  * @param text Text to convert to speech
  * @returns Audio URL that can be played
  */
 export const textToSpeech = async (text: string): Promise<string> => {
   try {
-    if (!text) {
-      console.warn('No text provided for TTS.');
+    // Check if API key is available
+    if (!OPENAI_API_KEY) {
+      console.warn('OpenAI API key not found. Using browser TTS instead.');
       return '';
     }
-    const response = await fetch(`${BASE_URL}/api/tts/openai`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
+
+    console.log('Generating speech with OpenAI...');
+    
+    // Generate speech using OpenAI SDK
+    const response = await openai.audio.speech.create({
+      model: "tts-1",
+      voice: "shimmer",
+      input: text
     });
-    if (!response.ok) {
-      throw new Error('Failed to generate speech with OpenAI TTS');
-    }
-    const audioBlob = await response.blob();
-    const audioUrl = URL.createObjectURL(audioBlob);
+    
+    // Convert the response to an ArrayBuffer
+    const arrayBuffer = await response.arrayBuffer();
+    
+    // Create a Blob from the ArrayBuffer
+    const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
+    
+    // Create a URL for the Blob
+    const audioUrl = URL.createObjectURL(blob);
+    
+    console.log('Speech generated successfully');
     return audioUrl;
   } catch (error) {
-    console.error('Error converting text to speech (OpenAI):', error);
+    console.error('Error converting text to speech:', error);
     return '';
   }
 };

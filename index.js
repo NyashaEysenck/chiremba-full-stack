@@ -8,8 +8,8 @@ import { body, validationResult } from 'express-validator';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import path from 'path';
-import fetch from 'node-fetch';
-import OpenAI from 'openai';
+
+import { spawn } from 'child_process';
 
 // Get the directory path for the current module
 const __filename = fileURLToPath(import.meta.url);
@@ -377,131 +377,18 @@ app.post('/api/init-admin', async (req, res) => {
   }
 });
 
-// === AI & TTS API Endpoints (server-side, secure) ===
 
-// OpenAI TTS
-app.post('/api/tts/openai', async (req, res) => {
-  try {
-    const { text } = req.body;
-    if (!text) return res.status(400).json({ error: 'No text provided' });
-    const openai = new OpenAI({ apiKey: process.env.VITE_OPENAI_API_KEY });
-    const response = await openai.audio.speech.create({
-      model: 'tts-1',
-      voice: 'shimmer',
-      input: text
-    });
-    const arrayBuffer = await response.arrayBuffer();
-    res.set('Content-Type', 'audio/mpeg');
-    res.send(Buffer.from(arrayBuffer));
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
 
-// Google Cloud TTS
-app.post('/api/tts/google', async (req, res) => {
-  try {
-    const { text } = req.body;
-    if (!text) return res.status(400).json({ error: 'No text provided' });
-    const apiKey = process.env.VITE_GOOGLE_CLOUD_TTS_API_KEY;
-    const endpoint = `https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`;
-    const body = {
-      input: { text },
-      voice: { languageCode: 'en-US', name: 'en-US-Wavenet-D' },
-      audioConfig: { audioEncoding: 'MP3' }
-    };
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    const data = await response.json();
-    if (!data.audioContent) return res.status(500).json({ error: 'No audio content' });
-    const audioBuffer = Buffer.from(data.audioContent, 'base64');
-    res.set('Content-Type', 'audio/mp3');
-    res.send(audioBuffer);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// ElevenLabs TTS
-app.post('/api/tts/elevenlabs', async (req, res) => {
-  try {
-    const { text } = req.body;
-    if (!text) return res.status(400).json({ error: 'No text provided' });
-    const apiKey = process.env.VITE_ELEVEN_LABS_API_KEY;
-    const voiceId = 'tnSpp4vdxKPjI9w0GnoV';
-    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'xi-api-key': apiKey,
-      },
-      body: JSON.stringify({
-        text,
-        model_id: 'eleven_multilingual_v2',
-        voice_settings: {
-          stability: 0.5,
-          similarity_boost: 0.75,
-          style: 0.5,
-          use_speaker_boost: true,
-        },
-      }),
-    });
-    if (!response.ok) {
-      const errorData = await response.json();
-      return res.status(500).json({ error: errorData });
-    }
-    const audioBuffer = await response.buffer();
-    res.set('Content-Type', 'audio/mpeg');
-    res.send(audioBuffer);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Google Gemini AI (text generation)
-app.post('/api/ai/google', async (req, res) => {
-  try {
-    const { prompt } = req.body;
-    if (!prompt) return res.status(400).json({ error: 'No prompt provided' });
-    const apiKey = process.env.VITE_GOOGLE_API_KEY;
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + apiKey, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-    });
-    const data = await response.json();
-    res.json(data);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// OpenAI GPT (text generation)
-app.post('/api/ai/openai', async (req, res) => {
-  try {
-    const { prompt } = req.body;
-    if (!prompt) return res.status(400).json({ error: 'No prompt provided' });
-    const openai = new OpenAI({ apiKey: process.env.VITE_OPENAI_API_KEY });
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4',
-      messages: [{ role: 'user', content: prompt }]
-    });
-    res.json(response);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
 
 // Serve static files from the frontend build
 app.use(express.static(path.join(__dirname, 'frontend/dist')));
+
 
 // Handle SPA client-side routing - return index.html for all other routes
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'frontend/dist', 'index.html'));
 });
+
 
 // Start server
 const PORT = process.env.PORT || 5000;
