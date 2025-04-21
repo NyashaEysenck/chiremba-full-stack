@@ -23,51 +23,15 @@ getConfig().then(config => {
  */
 export const textToSpeech = async (text: string): Promise<string> => {
   try {
-    if (!GOOGLE_CLOUD_TTS_API_KEY) {
-      throw new Error('Google Cloud TTS API key is not set.');
-    }
-    if (!text) {
-      console.warn('No text provided for TTS.');
-      return '';
-    }
-
-    console.log('Generating speech with Google Cloud TTS...');
-
-    const requestBody = {
-      input: { text },
-      voice: {
-        languageCode: 'en-US', // You can change this
-        name: 'en-US-Wavenet-D', // You can change this
-      },
-      audioConfig: {
-        audioEncoding: 'MP3',
-      },
-    };
-
-    const response = await fetch(GOOGLE_CLOUD_TTS_ENDPOINT, {
+    const response = await fetch('/api/ai/google/tts', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
     });
-
-    if (!response.ok) {
-      throw new Error('Failed to generate speech with Google Cloud TTS');
-    }
-
-    const data = await response.json();
-    if (!data.audioContent) {
-      throw new Error('No audio content received from Google Cloud TTS');
-    }
-
-    // audioContent is a base64-encoded string
-    const audioBlob = base64ToBlob(data.audioContent, 'audio/mp3');
-    const audioUrl = URL.createObjectURL(audioBlob);
-    console.log('Speech generated successfully (Google Cloud)');
-    return audioUrl;
+    if (!response.ok) throw new Error('Backend Google TTS failed');
+    const audioBlob = await response.blob();
+    return URL.createObjectURL(audioBlob);
   } catch (error) {
-    console.error('Error converting text to speech (Google Cloud):', error);
     return '';
   }
 };

@@ -1,5 +1,4 @@
 import { toast } from "@/hooks/use-toast";
-import { OpenAI } from "openai";
 
 // Function to fetch config from backend
 async function getConfig() {
@@ -14,48 +13,22 @@ getConfig().then(config => {
   OPENAI_API_KEY = config.OPENAI_API_KEY || '';
 });
 
-// Initialize the OpenAI API
-const openai = new OpenAI({
-  apiKey: OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true, // Required for client-side usage
-});
-
 // Chat history storage
 const chatHistories = new Map<string, any>();
 
+// Proxy AI API calls to backend endpoints
 export async function generateAIResponse(prompt: string, chatId?: string): Promise<string> {
   try {
-    if (!prompt.trim()) {
-      return "Please provide a valid prompt.";
-    }
-
-    if (chatId && chatHistories.has(chatId)) {
-      const messages = chatHistories.get(chatId);
-      messages.push({ role: "user", content: prompt });
-
-      const response = await openai.chat.completions.create({
-        model: "gpt-4",
-        messages,
-      });
-
-      const text = response.choices[0].message.content ?? "";
-      messages.push({ role: "assistant", content: text });
-      return text;
-    } else {
-      const response = await openai.chat.completions.create({
-        model: "gpt-4",
-        messages: [{ role: "user", content: prompt }],
-      });
-      return response.choices[0].message.content ?? "";
-    }
-  } catch (error) {
-    console.error("Error generating AI response:", error);
-    toast({
-      title: "AI Generation Error",
-      description: error instanceof Error ? error.message : "An error occurred while generating the AI response",
-      variant: "destructive",
+    const response = await fetch('/api/ai/openai/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt }),
     });
-    return "Sorry, there was an error generating a response. Please try again later.";
+    const data = await response.json();
+    if (data.content) return data.content;
+    return 'Sorry, there was an error generating a response.';
+  } catch (error) {
+    return 'Sorry, there was an error generating a response.';
   }
 }
 
@@ -121,12 +94,9 @@ IMPORTANT: All responses must be in ${language.toUpperCase()} language.`;
 
     messages.push({ role: "user", content: userMessage });
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages,
-    });
-
-    const text = response.choices[0].message.content ?? "";
+    const prompt = messages.map(message => `${message.role}: ${message.content}`).join('\n');
+    const response = await generateAIResponse(prompt);
+    const text = response;
     messages.push({ role: "assistant", content: text });
 
     return text;
