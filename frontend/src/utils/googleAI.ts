@@ -1,35 +1,20 @@
 import { toast } from "@/hooks/use-toast";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// The API key would ideally be in a Supabase function, but we're using the provided key directly for now
-const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
-
-// Initialize the Google Generative AI with our API key
-const genAI = new GoogleGenerativeAI(GOOGLE_API_KEY);
-
-// Get the Gemini model - using 1.5-flash for better performance
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
-// Store chat history for context
-const chatHistories = new Map<string, any>();
-
+// Calls backend Gemini endpoint
 export async function generateAIResponse(prompt: string, chatId?: string): Promise<string> {
   try {
-    // Simple validation
     if (!prompt.trim()) {
       return "Please provide a valid prompt.";
     }
-    
-    // Use chat history if available
-    if (chatId && chatHistories.has(chatId)) {
-      const chat = chatHistories.get(chatId);
-      const result = await chat.sendMessage(prompt);
-      return result.response.text();
-    } else {
-      // Use Gemini API directly for one-off interactions
-      const result = await model.generateContent([prompt]);
-      return result.response.text();
-    }
+    const response = await fetch('/api/ai/google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt }),
+    });
+    const data = await response.json();
+    // Gemini API returns a nested structure; extract text
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || data.text || "";
+    return text;
   } catch (error) {
     console.error("Error generating AI response:", error);
     toast({
@@ -78,46 +63,48 @@ Format your response for easy reading with numbered lists. Include a disclaimer 
 
 // Start or continue a chat session with memory
 export async function startOrContinueChat(chatId: string): Promise<void> {
-  if (!chatHistories.has(chatId)) {
-    const chat = model.startChat({
-      history: [],
-      generationConfig: {
-        maxOutputTokens: 800,
-      },
-    });
-    chatHistories.set(chatId, chat);
-  }
+  // No-op for now, as we're using the backend endpoint for Gemini calls
 }
 
 export async function getHealthChatResponse(userMessage: string, chatId: string, language: string = "english"): Promise<string> {
   try {
-    // Ensure a chat session exists
-    await startOrContinueChat(chatId);
+    // Ensure a chat session exists (not applicable with backend endpoint)
+    // await startOrContinueChat(chatId);
     
-    // Get the chat session
-    const chat = chatHistories.get(chatId);
-    if (!chat) {
-      throw new Error("Chat session not found");
-    }
+    // Get the chat session (not applicable with backend endpoint)
+    // const chat = chatHistories.get(chatId);
+    // if (!chat) {
+    //   throw new Error("Chat session not found");
+    // }
     
-    // Use the stored chat to maintain context
-    const systemPrompt = `You are Chiremba, a friendly and knowledgeable health assistant. 
+    // Use the stored chat to maintain context (not applicable with backend endpoint)
+    // const systemPrompt = `You are Chiremba, a friendly and knowledgeable health assistant. 
+    // Respond to the following health-related question or comment in a helpful, informative, and compassionate way.
+    // If the query suggests a serious medical condition, advise the user to seek professional medical help.
+    
+    // Use appropriate formatting with line breaks to improve readability.
+    // DO NOT use asterisks (**) in your response to highlight text or for formatting.
+    
+    // IMPORTANT: All responses must be in ${language.toUpperCase()} language.`;
+    
+    // Add system prompt if this is a new conversation (not applicable with backend endpoint)
+    // if (!chat.history || chat.history.length === 0) {
+    //   await chat.sendMessage(systemPrompt);
+    // }
+    
+    // Send the user message and get response
+    const prompt = `You are Chiremba, a friendly and knowledgeable health assistant. 
     Respond to the following health-related question or comment in a helpful, informative, and compassionate way.
     If the query suggests a serious medical condition, advise the user to seek professional medical help.
     
     Use appropriate formatting with line breaks to improve readability.
     DO NOT use asterisks (**) in your response to highlight text or for formatting.
     
-    IMPORTANT: All responses must be in ${language.toUpperCase()} language.`;
-    
-    // Add system prompt if this is a new conversation
-    if (!chat.history || chat.history.length === 0) {
-      await chat.sendMessage(systemPrompt);
-    }
-    
-    // Send the user message and get response
-    const result = await chat.sendMessage(userMessage);
-    return result.response.text();
+    IMPORTANT: All responses must be in ${language.toUpperCase()} language.
+
+    User message: ${userMessage}`;
+    const result = await generateAIResponse(prompt);
+    return result;
   } catch (error) {
     console.error("Error getting health chat response:", error);
     return "I'm sorry, I'm having trouble responding right now. Please try again in a moment.";
@@ -126,9 +113,7 @@ export async function getHealthChatResponse(userMessage: string, chatId: string,
 
 // Function to clear chat history for a specific chat
 export function clearChatHistory(chatId: string): void {
-  if (chatHistories.has(chatId)) {
-    chatHistories.delete(chatId);
-  }
+  // No-op for now, as we're using the backend endpoint for Gemini calls
 }
 
 // Placeholder function for enhanced text-to-speech (to be implemented with ElevenLabs)

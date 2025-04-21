@@ -1,11 +1,4 @@
 import { toast } from "@/hooks/use-toast";
-import { OpenAI } from "openai";
-
-// Initialize the OpenAI API
-const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY, // Add your OpenAI key in env
-  dangerouslyAllowBrowser: true, // Required for client-side usage
-});
 
 // Chat history storage
 const chatHistories = new Map<string, any>();
@@ -15,26 +8,20 @@ export async function generateAIResponse(prompt: string, chatId?: string): Promi
     if (!prompt.trim()) {
       return "Please provide a valid prompt.";
     }
-
-    if (chatId && chatHistories.has(chatId)) {
-      const messages = chatHistories.get(chatId);
-      messages.push({ role: "user", content: prompt });
-
-      const response = await openai.chat.completions.create({
-        model: "gpt-4",
-        messages,
-      });
-
-      const text = response.choices[0].message.content ?? "";
-      messages.push({ role: "assistant", content: text });
-      return text;
-    } else {
-      const response = await openai.chat.completions.create({
-        model: "gpt-4",
-        messages: [{ role: "user", content: prompt }],
-      });
-      return response.choices[0].message.content ?? "";
+    const response = await fetch('/api/ai/openai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt }),
+    });
+    const data = await response.json();
+    // Extract text from OpenAI response
+    let text = '';
+    if (data.choices && data.choices[0] && data.choices[0].message) {
+      text = data.choices[0].message.content;
+    } else if (data.choices && data.choices[0] && data.choices[0].text) {
+      text = data.choices[0].text;
     }
+    return text || "";
   } catch (error) {
     console.error("Error generating AI response:", error);
     toast({
@@ -108,12 +95,9 @@ IMPORTANT: All responses must be in ${language.toUpperCase()} language.`;
 
     messages.push({ role: "user", content: userMessage });
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages,
-    });
-
-    const text = response.choices[0].message.content ?? "";
+    const prompt = messages.map((message) => ({ role: message.role, content: message.content })).map((message, index) => `${index + 1}. ${message.role}: ${message.content}`).join('\n\n');
+    const response = await generateAIResponse(prompt);
+    const text = response;
     messages.push({ role: "assistant", content: text });
 
     return text;
