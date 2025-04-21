@@ -1,7 +1,18 @@
 // OpenAI API integration for high-quality text-to-speech
 import OpenAI from 'openai';
 
-const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || '';
+// Function to fetch config from backend
+async function getConfig() {
+  const response = await fetch('/api/config');
+  return response.json();
+}
+
+let OPENAI_API_KEY = '';
+
+// Immediately fetch config on module load
+getConfig().then(config => {
+  OPENAI_API_KEY = config.OPENAI_API_KEY || '';
+});
 
 // Initialize the OpenAI client
 const openai = new OpenAI({
@@ -16,34 +27,15 @@ const openai = new OpenAI({
  */
 export const textToSpeech = async (text: string): Promise<string> => {
   try {
-    // Check if API key is available
-    if (!OPENAI_API_KEY) {
-      console.warn('OpenAI API key not found. Using browser TTS instead.');
-      return '';
-    }
-
-    console.log('Generating speech with OpenAI...');
-    
-    // Generate speech using OpenAI SDK
-    const response = await openai.audio.speech.create({
-      model: "tts-1",
-      voice: "shimmer",
-      input: text
+    const response = await fetch('/api/ai/openai/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
     });
-    
-    // Convert the response to an ArrayBuffer
-    const arrayBuffer = await response.arrayBuffer();
-    
-    // Create a Blob from the ArrayBuffer
-    const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
-    
-    // Create a URL for the Blob
-    const audioUrl = URL.createObjectURL(blob);
-    
-    console.log('Speech generated successfully');
-    return audioUrl;
+    if (!response.ok) throw new Error('Backend TTS failed');
+    const audioBlob = await response.blob();
+    return URL.createObjectURL(audioBlob);
   } catch (error) {
-    console.error('Error converting text to speech:', error);
     return '';
   }
 };

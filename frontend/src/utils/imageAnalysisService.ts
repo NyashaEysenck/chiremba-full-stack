@@ -7,8 +7,17 @@ interface AnalysisResult {
   alternatives?: Array<{class: string, confidence: number}>;
 }
 
-// The base URL of our FastAPI server - using environment variable with fallback to dynamic hostname
-const API_BASE_URL = import.meta.env.VITE_FASTAPI_URL || `http://${window.location.hostname}:8000`;
+// Function to fetch config from backend
+async function getConfig() {
+  const response = await fetch('/api/config');
+  return response.json();
+}
+
+let API_BASE_URL = '';
+
+getConfig().then(config => {
+  API_BASE_URL = config.FASTAPI_URL || `http://${window.location.hostname}:8000`;
+});
 
 // Map frontend model IDs to backend API endpoints
 const API_ENDPOINTS: Record<string, string> = {
