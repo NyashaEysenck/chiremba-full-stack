@@ -27,7 +27,7 @@ console.log('Environment variables loaded:', {
 
 // Initialize Express app
 const app = express();
-const FRONTEND_ORIGINS = ['https://chiremba-ai-frontend-production.up.railway.app', 'http://localhost:5173'];
+const FRONTEND_ORIGINS = ['https://chiremba-ai-frontend-production.up.railway.app', 'http://localhost:5173', 'https://chiremba-full-stack-160376271578.us-central1.run.app'];
 
 app.use(cors({
   origin: FRONTEND_ORIGINS,
