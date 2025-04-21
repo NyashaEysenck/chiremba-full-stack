@@ -1,4 +1,5 @@
 // ElevenLabs TTS utility now calls backend endpoint
+const BASE_URL = import.meta.env.VITE_EXPRESS_API_URL || '';
 const ELEVEN_LABS_VOICE_ID = 'tnSpp4vdxKPjI9w0GnoV'; // Sarah voice
 
 /**
@@ -12,7 +13,7 @@ export const textToSpeech = async (text: string): Promise<string> => {
       console.warn('No text provided for TTS.');
       return '';
     }
-    const response = await fetch('/api/tts/elevenlabs', {
+    const response = await fetch(`${BASE_URL}/api/tts/elevenlabs`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text }),

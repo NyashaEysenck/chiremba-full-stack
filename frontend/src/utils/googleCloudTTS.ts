@@ -1,7 +1,8 @@
 // Google Cloud TTS utility now calls backend endpoint
 // WARNING: Do NOT expose your API key in production!
 
-const GOOGLE_CLOUD_TTS_ENDPOINT = '/api/tts/google';
+const BASE_URL = import.meta.env.VITE_EXPRESS_API_URL || '';
+const GOOGLE_CLOUD_TTS_ENDPOINT = `${BASE_URL}/api/tts/google`;
 
 /**
  * Converts text to speech using Google Cloud TTS via backend

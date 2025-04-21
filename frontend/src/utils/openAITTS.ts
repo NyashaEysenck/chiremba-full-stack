@@ -1,4 +1,6 @@
 // OpenAI TTS utility now calls backend endpoint
+const BASE_URL = import.meta.env.VITE_EXPRESS_API_URL || '';
+
 /**
  * Converts text to speech using OpenAI's TTS API via backend
  * @param text Text to convert to speech
@@ -10,7 +12,7 @@ export const textToSpeech = async (text: string): Promise<string> => {
       console.warn('No text provided for TTS.');
       return '';
     }
-    const response = await fetch('/api/tts/openai', {
+    const response = await fetch(`${BASE_URL}/api/tts/openai`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text }),

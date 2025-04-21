@@ -1,5 +1,7 @@
 import { toast } from "@/hooks/use-toast";
 
+const BASE_URL = import.meta.env.VITE_EXPRESS_API_URL || '';
+
 // Chat history storage
 const chatHistories = new Map<string, any>();
 
@@ -8,7 +10,7 @@ export async function generateAIResponse(prompt: string, chatId?: string): Promi
     if (!prompt.trim()) {
       return "Please provide a valid prompt.";
     }
-    const response = await fetch('/api/ai/openai', {
+    const response = await fetch(`${BASE_URL}/api/ai/openai`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt }),
