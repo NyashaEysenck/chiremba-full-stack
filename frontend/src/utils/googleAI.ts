@@ -1,18 +1,5 @@
 import { toast } from "@/hooks/use-toast";
 
-// Function to fetch config from backend
-async function getConfig() {
-  const response = await fetch('/api/config');
-  return response.json();
-}
-
-let GOOGLE_API_KEY = '';
-
-// Immediately fetch config on module load
-getConfig().then(config => {
-  GOOGLE_API_KEY = config.GOOGLE_API_KEY || '';
-});
-
 // Proxy Google Generative AI (Gemini) to backend
 export async function generateAIResponse(prompt: string, chatId?: string): Promise<string> {
   try {

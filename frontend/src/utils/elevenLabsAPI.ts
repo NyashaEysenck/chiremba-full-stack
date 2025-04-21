@@ -1,17 +1,4 @@
-
 // ElevenLabs API integration for high-quality text-to-speech
-let ELEVEN_LABS_API_KEY = '';
-
-// Function to fetch config from backend
-async function getConfig() {
-  const response = await fetch('/api/config');
-  return response.json();
-}
-
-// Immediately fetch config on module load
-getConfig().then(config => {
-  ELEVEN_LABS_API_KEY = config.ELEVEN_LABS_API_KEY || '';
-});
 
 const ELEVEN_LABS_VOICE_ID = 'tnSpp4vdxKPjI9w0GnoV'; // Sarah voice
 

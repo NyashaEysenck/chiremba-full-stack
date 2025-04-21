@@ -1,18 +1,5 @@
 import { toast } from "@/hooks/use-toast";
 
-// Function to fetch config from backend
-async function getConfig() {
-  const response = await fetch('/api/config');
-  return response.json();
-}
-
-let OPENAI_API_KEY = '';
-
-// Immediately fetch config on module load
-getConfig().then(config => {
-  OPENAI_API_KEY = config.OPENAI_API_KEY || '';
-});
-
 // Chat history storage
 const chatHistories = new Map<string, any>();
 

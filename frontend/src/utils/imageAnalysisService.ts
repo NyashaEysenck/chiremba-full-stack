@@ -7,18 +7,6 @@ interface AnalysisResult {
   alternatives?: Array<{class: string, confidence: number}>;
 }
 
-// Function to fetch config from backend
-async function getConfig() {
-  const response = await fetch('/api/config');
-  return response.json();
-}
-
-let API_BASE_URL = '';
-
-getConfig().then(config => {
-  API_BASE_URL = config.FASTAPI_URL || `http://${window.location.hostname}:8000`;
-});
-
 // Map frontend model IDs to backend API endpoints
 const API_ENDPOINTS: Record<string, string> = {
   'brain-tumor': '/braintumor_detection',
@@ -142,7 +130,7 @@ export async function testServerConnection(file: File): Promise<boolean> {
     console.log('Testing connection to server...');
     
     // Use the test endpoint which is lightweight
-    const response = await fetch(`${API_BASE_URL}/test`, {
+    const response = await fetch('http://localhost:8000/test', {
       method: 'POST',
       body: formData,
       mode: 'cors',
@@ -175,7 +163,7 @@ export async function analyzeImage(file: File, modelType: string): Promise<any> 
     const serverAvailable = await testServerConnection(file);
     
     if (!serverAvailable) {
-      throw new Error(`Cannot connect to the analysis server. Please make sure the server is running at ${API_BASE_URL}`);
+      throw new Error(`Cannot connect to the analysis server. Please make sure the server is running at http://localhost:8000`);
     }
     
     const endpoint = API_ENDPOINTS[modelType];
@@ -196,12 +184,12 @@ export async function analyzeImage(file: File, modelType: string): Promise<any> 
     const formData = new FormData();
     formData.append('file', file);
 
-    console.log(`Sending request to: ${API_BASE_URL}${endpoint}`);
+    console.log(`Sending request to: http://localhost:8000${endpoint}`);
     
     // For testing purposes, use the test endpoint
     const useTestEndpoint = false; // Changed to false to use the real model endpoints
     
-    const url = useTestEndpoint ? `${API_BASE_URL}/test` : `${API_BASE_URL}${endpoint}`;
+    const url = useTestEndpoint ? 'http://localhost:8000/test' : `http://localhost:8000${endpoint}`;
     
     const response = await fetch(url, {
       method: 'POST',

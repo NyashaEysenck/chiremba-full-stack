@@ -1,22 +1,8 @@
 // OpenAI API integration for high-quality text-to-speech
 import OpenAI from 'openai';
 
-// Function to fetch config from backend
-async function getConfig() {
-  const response = await fetch('/api/config');
-  return response.json();
-}
-
-let OPENAI_API_KEY = '';
-
-// Immediately fetch config on module load
-getConfig().then(config => {
-  OPENAI_API_KEY = config.OPENAI_API_KEY || '';
-});
-
 // Initialize the OpenAI client
 const openai = new OpenAI({
-  apiKey: OPENAI_API_KEY,
   dangerouslyAllowBrowser: true // Required for client-side usage
 });
 

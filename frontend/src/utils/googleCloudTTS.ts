@@ -1,21 +1,6 @@
 // Google Cloud TTS direct REST API integration (for dev/testing only)
 // WARNING: Do NOT expose your API key in production!
 
-// Function to fetch config from backend
-async function getConfig() {
-  const response = await fetch('/api/config');
-  return response.json();
-}
-
-let GOOGLE_CLOUD_TTS_API_KEY = '';
-let GOOGLE_CLOUD_TTS_ENDPOINT = '';
-
-// Immediately fetch config on module load
-getConfig().then(config => {
-  GOOGLE_CLOUD_TTS_API_KEY = config.GOOGLE_CLOUD_TTS_API_KEY || '';
-  GOOGLE_CLOUD_TTS_ENDPOINT = `https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_CLOUD_TTS_API_KEY}`;
-});
-
 /**
  * Converts text to speech using Google Cloud TTS API
  * @param text Text to convert to speech
