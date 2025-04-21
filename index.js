@@ -389,13 +389,7 @@ app.get('/api/config', (req, res) => {
   });
 });
 
-// Serve static files from the frontend build
-app.use(express.static(path.join(__dirname, 'frontend/dist')));
 
-// Handle SPA client-side routing - return index.html for all other routes
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'frontend/dist', 'index.html'));
-});
 
 // --- AI API Proxy Endpoints ---
 import OpenAI from 'openai';
@@ -502,9 +496,13 @@ app.post('/api/ai/googleai/chat', async (req, res) => {
   }
 });
 
-// (Google Generative AI endpoint placeholder: requires extra setup)
-// You may add Gemini/Gemini-Proxy logic here if needed
+// Serve static files from the frontend build
+app.use(express.static(path.join(__dirname, 'frontend/dist')));
 
+// Handle SPA client-side routing - return index.html for all other routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'frontend/dist', 'index.html'));
+});
 // Start server
 const PORT = process.env.PORT || 5000;
 const HOST = process.env.EXPRESS_HOST || '0.0.0.0';
