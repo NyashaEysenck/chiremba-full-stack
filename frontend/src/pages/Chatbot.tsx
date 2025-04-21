@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { getHealthChatResponse, startOrContinueChat, clearChatHistory } from '@/utils/googleAI';
 import { Switch } from "@/components/ui/switch"; 
-import { textToSpeech } from '@/utils/elevenLabsAPI';
+import { textToSpeech } from '@/utils/openAITTS';
 import { v4 as uuidv4 } from 'uuid';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
