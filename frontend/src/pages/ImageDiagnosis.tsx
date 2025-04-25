@@ -1168,17 +1168,6 @@ const ImageDiagnosis = () => {
                       </div>
                     </div>
 
-                    <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
-                      <div className="flex">
-                        <Info className="h-5 w-5 text-blue-700 mr-2 flex-shrink-0" />
-                        <div>
-                          <h3 className="text-sm font-medium text-blue-800">Recommendations</h3>
-                          <p className="mt-1 text-sm text-blue-700">
-                            {analysisResult.recommendations}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
                     
                     
                     {/* Display alternative diagnoses for skin infection */}
