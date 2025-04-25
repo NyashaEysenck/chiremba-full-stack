@@ -130,7 +130,7 @@ export async function testServerConnection(file: File): Promise<boolean> {
     console.log('Testing connection to server...');
     
     // Use the test endpoint which is lightweight
-    const response = await fetch('http://localhost:8000/test', {
+    const response = await fetch(`${import.meta.env.VITE_FASTAPI_URL}/test`, {
       method: 'POST',
       body: formData,
       mode: 'cors',
@@ -163,7 +163,7 @@ export async function analyzeImage(file: File, modelType: string): Promise<any> 
     const serverAvailable = await testServerConnection(file);
     
     if (!serverAvailable) {
-      throw new Error(`Cannot connect to the analysis server. Please make sure the server is running at http://localhost:8000`);
+      throw new Error(`Cannot connect to the analysis server. Please make sure the server is running at ${import.meta.env.VITE_FASTAPI_URL}`);
     }
     
     const endpoint = API_ENDPOINTS[modelType];
@@ -184,12 +184,12 @@ export async function analyzeImage(file: File, modelType: string): Promise<any> 
     const formData = new FormData();
     formData.append('file', file);
 
-    console.log(`Sending request to: http://localhost:8000${endpoint}`);
+    console.log(`Sending request to: ${import.meta.env.VITE_FASTAPI_URL}${endpoint}`);
     
     // For testing purposes, use the test endpoint
     const useTestEndpoint = false; // Changed to false to use the real model endpoints
     
-    const url = useTestEndpoint ? 'http://localhost:8000/test' : `http://localhost:8000${endpoint}`;
+    const url = useTestEndpoint ? `${import.meta.env.VITE_FASTAPI_URL}/test` : `${import.meta.env.VITE_FASTAPI_URL}${endpoint}`;
     
     const response = await fetch(url, {
       method: 'POST',
