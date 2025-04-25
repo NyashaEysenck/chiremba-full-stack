@@ -1167,8 +1167,6 @@ const ImageDiagnosis = () => {
                         </div>
                       </div>
                     </div>
-
-                    
                     
                     {/* Display alternative diagnoses for skin infection */}
                     {selectedModel === 'skin-infection' && analysisResult.alternatives && analysisResult.alternatives.length > 0 && (
