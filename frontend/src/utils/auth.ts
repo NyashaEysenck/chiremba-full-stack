@@ -7,6 +7,7 @@ export interface User {
   name: string;
   role: string;
   createdAt?: string;
+  status?: string;
 }
 
 // Interface for auth response
@@ -15,39 +16,6 @@ export interface AuthResponse {
   user?: User;
   message?: string;
 }
-
-/**
- * Sign in a user with email and password
- */
-export const signIn = async (email: string, password: string): Promise<AuthResponse> => {
-  try {
-    // Call the MongoDB API to login
-    const response = await mongoAPI.auth.login(email, password);
-    
-    return {
-      success: true,
-      user: response.user
-    };
-  } catch (error: any) {
-    console.error('Login error:', error);
-    
-    // Extract the most user-friendly error message
-    let errorMessage = 'Invalid email or password';
-    
-    if (error instanceof Error) {
-      errorMessage = error.message;
-    } else if (typeof error === 'string') {
-      errorMessage = error;
-    } else if (error && typeof error === 'object' && 'message' in error) {
-      errorMessage = error.message as string;
-    }
-    
-    return {
-      success: false,
-      message: errorMessage
-    };
-  }
-};
 
 /**
  * Sign out the current user
@@ -77,16 +45,13 @@ export const createAccount = async (
     // For staff/admin accounts, use the users API to create with specific role
     if (role === 'staff' || role === 'admin') {
       await mongoAPI.users.createUser({ email, password, name, role });
-      
       return {
         success: true,
-        message: `${role.charAt(0).toUpperCase() + role.slice(1)} account created successfully`
+        message: `${role.charAt(0).toUpperCase() + role.slice(1)} account created successfully. Password setup email sent.`
       };
     } 
-    
     // For regular users, use the register endpoint
     const response = await mongoAPI.auth.register(email, password, name);
-    
     return {
       success: true,
       user: response.user
@@ -97,6 +62,25 @@ export const createAccount = async (
       success: false,
       message: error.message || 'Failed to create account'
     };
+  }
+};
+
+/**
+ * Set up password using token
+ */
+export const setupPassword = async (token: string, password: string): Promise<{ success: boolean; message: string }> => {
+  try {
+    const apiUrl = import.meta.env.VITE_EXPRESS_API_URL || `http://${window.location.hostname}:5000`;
+    const response = await fetch(`${apiUrl}/api/auth/setup-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, password })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Failed to set password');
+    return { success: true, message: data.message };
+  } catch (error: any) {
+    return { success: false, message: error.message || 'Failed to set password' };
   }
 };
 
@@ -138,6 +122,26 @@ export const assignAdminRole = async (userId: string): Promise<{ success: boolea
     return {
       success: false,
       message: error.message || 'Failed to assign admin role'
+    };
+  }
+};
+
+/**
+ * Reset a user's account (set password to null, status to pending, resend setup email)
+ */
+export const resetUserAccount = async (userId: string): Promise<{ success: boolean; message?: string }> => {
+  try {
+    // Call the MongoDB API to reset user account
+    await mongoAPI.users.resetUserAccount(userId);
+    return {
+      success: true,
+      message: 'User account reset and setup email resent.'
+    };
+  } catch (error: any) {
+    console.error('Reset user account error:', error);
+    return {
+      success: false,
+      message: error.message || 'Failed to reset user account'
     };
   }
 };
@@ -187,5 +191,34 @@ export const ensureAdminUser = async (): Promise<boolean> => {
   } catch (error) {
     console.error('Error ensuring admin user:', error);
     return false;
+  }
+};
+
+/**
+ * Login a user with email and password
+ */
+export const login = async (email: string, password: string): Promise<{ success: boolean; user?: User; message?: string }> => {
+  try {
+    const response = await mongoAPI.auth.login(email, password);
+    return {
+      success: true,
+      user: response.user
+    };
+  } catch (error: any) {
+    let errorMessage = 'Invalid email or password. Please try again.';
+    // Axios error: check for error.response.data.message
+    if (error?.response?.data?.message) {
+      errorMessage = error.response.data.message;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    } else if (error && typeof error === 'object' && 'message' in error) {
+      errorMessage = error.message as string;
+    }
+    return {
+      success: false,
+      message: errorMessage
+    };
   }
 };

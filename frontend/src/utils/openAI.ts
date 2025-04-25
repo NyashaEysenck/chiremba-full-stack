@@ -22,10 +22,11 @@ export async function generateAIResponse(prompt: string, chatId?: string): Promi
 export async function analyzeHealthSymptoms(symptoms: string): Promise<any> {
   try {
     const prompt = `As a medical assistant, analyze these symptoms and provide a structured response with the following sections:
-1. Possible conditions (list the top 3 most likely conditions based on the symptoms)
+1. Possible conditions (list the top 3 most likely conditions based on the symptoms.)
 2. Suggested medications or treatments for each condition
 3. Urgency level (low, medium, high)
 4. When to seek professional medical help
+5. Disclaimer
 
 User symptoms: ${symptoms}
 
@@ -102,49 +103,4 @@ export function clearChatHistory(chatId: string): void {
 export async function getEnhancedTextToSpeech(text: string): Promise<void> {
   console.log("Enhanced TTS would process:", text);
 }
-
-export async function loadBrainTumorModel(): Promise<void> {
-  console.log("Loading brain tumor detection model...");
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      console.log("Brain tumor model loaded");
-      resolve();
-    }, 1000);
-  });
-}
-
-export async function detectBrainTumor(imageElement: HTMLImageElement): Promise<{ hasTumor: boolean; confidence: number }> {
-  console.log("Analyzing brain scan for tumors...");
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const random = Math.random();
-      const hasTumor = random > 0.5;
-      const confidence = hasTumor
-        ? Math.floor(70 + random * 25)
-        : Math.floor(75 + random * 20);
-
-      console.log(`Analysis complete: ${hasTumor ? "Tumor detected" : "No tumor detected"} with ${confidence}% confidence`);
-      resolve({ hasTumor, confidence });
-    }, 2000);
-  });
-}
-
-export async function analyzeMedicalDocument(documentText: string): Promise<string> {
-  try {
-    const prompt = `Extract and summarize the key medical information from this document:
-${documentText}
-
-Focus on:
-1. Patient information
-2. Diagnosis details
-3. Treatment recommendations
-4. Follow-up information
-
-DO NOT use asterisks (**) in your response for any formatting.`;
-
-    return await generateAIResponse(prompt);
-  } catch (error) {
-    console.error("Error analyzing medical document:", error);
-    return "Sorry, there was an error analyzing this document. Please try again later.";
-  }
-}
+ 

@@ -48,9 +48,12 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/ai-sympto
 // Define User Schema
 const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
+  password: { type: String, required: false },
   name: { type: String, required: true },
   role: { type: String, enum: ['user', 'staff', 'admin'], default: 'user' },
+  status: { type: String, enum: ['pending', 'active'], default: 'pending' },
+  passwordResetToken: { type: String },
+  passwordResetExpires: { type: Date },
   createdAt: { type: Date, default: Date.now }
 });
 
@@ -87,6 +90,29 @@ const isStaffOrAdmin = (req, res, next) => {
   }
   next();
 };
+
+// Email sending setup
+import nodemailer from 'nodemailer';
+
+const EMAIL_HOST = process.env.EMAIL_HOST;
+const EMAIL_PORT = process.env.EMAIL_PORT;
+const EMAIL_USER = process.env.EMAIL_USER;
+const EMAIL_PASS = process.env.EMAIL_PASS;
+const EMAIL_FROM = process.env.EMAIL_FROM || 'no-reply@chiremba.com';
+const FRONTEND_URL = process.env.VITE_EXPRESS_API_URL || 'http://localhost:5173';
+
+const transporter = nodemailer.createTransport({
+  host: EMAIL_HOST,
+  port: EMAIL_PORT,
+  secure: EMAIL_PORT == 465, // true for 465, false for other ports
+  auth: {
+    user: EMAIL_USER,
+    pass: EMAIL_PASS,
+  },
+  tls: {
+    rejectUnauthorized: false
+  }
+});
 
 // API Routes
 
@@ -145,15 +171,49 @@ app.post('/api/auth/register', [
   }
 });
 
+// Password setup endpoint
+app.post('/api/auth/setup-password', async (req, res) => {
+  const { token, password } = req.body;
+  if (!token || !password) {
+    return res.status(400).json({ message: 'Token and password are required' });
+  }
+
+  try {
+    const user = await User.findOne({ passwordResetToken: token, passwordResetExpires: { $gt: new Date() } });
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired token' });
+    }
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    user.password = hashedPassword;
+    user.status = 'active';
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save();
+    res.status(200).json({ message: 'Password set successfully. You can now log in.' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Login user
 app.post('/api/auth/login', async (req, res) => {
   try {
+  
     // Check if user exists
     const user = await User.findOne({ email: req.body.email });
+ 
     if (!user) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
-
+    
+    // Check if user is active and has a password
+    if (user.status !== 'active' || !user.password) {
+     
+      return res.status(403).json({ message: 'Account not active. Please set up your password from the email link.' });
+    }
+   
     // Check password
     const validPassword = await bcrypt.compare(req.body.password, user.password);
     if (!validPassword) {
@@ -234,7 +294,6 @@ app.get('/api/users/staff', authenticateToken, isAdmin, async (req, res) => {
 // Create a staff user (admin only)
 app.post('/api/users/staff', authenticateToken, isAdmin, [
   body('email').isEmail().withMessage('Enter a valid email'),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
   body('name').notEmpty().withMessage('Name is required')
 ], async (req, res) => {
   // Validate request
@@ -250,28 +309,96 @@ app.post('/api/users/staff', authenticateToken, isAdmin, [
       return res.status(400).json({ message: 'Email already exists' });
     }
 
-    // Hash the password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(req.body.password, salt);
+    // Generate password setup token and expiry
+    const crypto = await import('crypto');
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-    // Create new staff user
+    // Create new staff user with pending status and no password
     const user = new User({
       email: req.body.email,
-      password: hashedPassword,
+      password: null,
       name: req.body.name,
-      role: 'staff'
+      role: 'staff',
+      status: 'pending',
+      passwordResetToken: token,
+      passwordResetExpires: expiry
     });
 
     // Save user to database
     const savedUser = await user.save();
-    
+
+    // Send password setup email to user with link containing token
+    try {
+      const setupLink = `${FRONTEND_URL}/setup-password?token=${token}`;
+      await transporter.sendMail({
+        from: EMAIL_FROM,
+        to: req.body.email,
+        subject: 'Welcome to Chiremba – Set Up Your Account',
+        html: `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Set Up Your Chiremba Account</title>
+</head>
+<body style="background: #f9f9f9; font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background: #f9f9f9; padding: 40px 0;">
+    <tr>
+      <td align="center">
+        <table width="100%" style="max-width: 480px; background: #fff; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.06); padding: 32px 28px;">
+          <tr>
+            <td align="center" style="padding-bottom: 18px;">
+              <img src="https://imgur.com/pG9BKgz.png" width="64" height="64" alt="Chiremba Logo" style="border-radius: 8px;">
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding-bottom: 18px;">
+              <h1 style="margin: 0; font-size: 1.8rem; color: #e05a47;">Welcome to Chiremba!</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding-bottom: 18px; color: #444; font-size: 1.05rem; line-height: 1.6;">
+              <p style="margin: 0 0 12px 0;">You have been invited to join the Chiremba platform. To activate your account, please set your password by clicking the button below. This link will expire in 1 hour for your security.</p>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding-bottom: 24px;">
+              <a href="${setupLink}" style="display: inline-block; background: #e05a47; color: #fff; font-weight: 600; padding: 14px 32px; border-radius: 6px; text-decoration: none; font-size: 1.15rem; letter-spacing: 0.03em; box-shadow: 0 2px 8px rgba(224,90,71,0.12);">Set Up Password</a>
+            </td>
+          </tr>
+          <tr>
+            <td style="color: #888; font-size: 0.95rem; padding-bottom: 12px;">
+              <p style="margin: 0;">If you did not expect this email, you can safely ignore it.</p>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding-top: 12px; color: #bbb; font-size: 0.85rem;">
+              &copy; ${new Date().getFullYear()} Chiremba. All rights reserved.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+        `,
+      });
+    } catch (err) {
+      console.error('Error sending setup email:', err);
+    }
+
     res.status(201).json({
       user: {
         id: savedUser._id,
         email: savedUser.email,
         name: savedUser.name,
-        role: savedUser.role
-      }
+        role: savedUser.role,
+        status: savedUser.status
+      },
+      message: 'User created. Password setup email sent.'
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -355,7 +482,8 @@ app.post('/api/init-admin', async (req, res) => {
       email: 'admin@chiremba.com',
       password: hashedPassword,
       name: 'Admin User',
-      role: 'admin'
+      role: 'admin',
+      status: 'active'
     });
 
     await adminUser.save();
@@ -366,7 +494,8 @@ app.post('/api/init-admin', async (req, res) => {
       email: 'staff@chiremba.com',
       password: staffPassword,
       name: 'Staff User',
-      role: 'staff'
+      role: 'staff',
+      status: 'active'
     });
 
     await staffUser.save();
@@ -504,6 +633,91 @@ app.post('/api/ai/googleai/chat', async (req, res) => {
 
 // (Google Generative AI endpoint placeholder: requires extra setup)
 // You may add Gemini/Gemini-Proxy logic here if needed
+
+// --- RESET USER ACCOUNT (ADMIN ONLY) ---
+app.post('/api/users/:userId/reset-account', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    // Set password to null and status to pending
+    user.password = null;
+    user.status = 'pending';
+    // Generate password reset token
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    user.passwordResetToken = token;
+    user.passwordResetExpires = Date.now() + 60 * 60 * 1000; // 1 hour
+    await user.save();
+
+    // Send password setup email
+    const setupLink = `${FRONTEND_URL}/setup-password?token=${token}`;
+    try {
+      await transporter.sendMail({
+        from: EMAIL_FROM,
+        to: user.email,
+        subject: 'Reset Your Chiremba Account',
+        html: `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reset Your Chiremba Account</title>
+</head>
+<body style="background: #f9f9f9; font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background: #f9f9f9; padding: 40px 0;">
+    <tr>
+      <td align="center">
+        <table width="100%" style="max-width: 480px; background: #fff; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.06); padding: 32px 28px;">
+          <tr>
+            <td align="center" style="padding-bottom: 18px;">
+              <img src="https://imgur.com/pG9BKgz.png" width="64" height="64" alt="Chiremba Logo" style="border-radius: 8px;">
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding-bottom: 18px;">
+              <h1 style="margin: 0; font-size: 1.8rem; color: #e05a47;">Reset Your Chiremba Account</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding-bottom: 18px; color: #444; font-size: 1.05rem; line-height: 1.6;">
+              <p style="margin: 0 0 12px 0;">Your account has been reset by an administrator. To reactivate your account, please set a new password by clicking the button below. This link will expire in 1 hour for your security.</p>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding-bottom: 24px;">
+              <a href="${setupLink}" style="display: inline-block; background: #e05a47; color: #fff; font-weight: 600; padding: 14px 32px; border-radius: 6px; text-decoration: none; font-size: 1.15rem; letter-spacing: 0.03em; box-shadow: 0 2px 8px rgba(224,90,71,0.12);">Set Up Password</a>
+            </td>
+          </tr>
+          <tr>
+            <td style="color: #888; font-size: 0.95rem; padding-bottom: 12px;">
+              <p style="margin: 0;">If you did not expect this email, you can safely ignore it.</p>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding-top: 12px; color: #bbb; font-size: 0.85rem;">
+              &copy; ${new Date().getFullYear()} Chiremba. All rights reserved.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+        `,
+      });
+    } catch (err) {
+      console.error('Error sending reset email:', err);
+    }
+
+    res.json({ success: true, message: 'User account reset and setup email sent.' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
 
 // Start server
 const PORT = process.env.PORT || 5000;

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, signIn, signOut, getCurrentUser } from '@/utils/auth';
+import { User, login, signOut, getCurrentUser } from '@/utils/auth';
 
 // Define the auth context type
 interface AuthContextType {
@@ -7,7 +7,7 @@ interface AuthContextType {
   userRole: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
 }
 
@@ -17,7 +17,7 @@ const AuthContext = createContext<AuthContextType>({
   userRole: null,
   isAuthenticated: false,
   isLoading: true,
-  login: async () => false,
+  login: async () => ({ success: false }),
   logout: async () => {},
 });
 
@@ -58,22 +58,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, []);
 
   // Login function
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<{ success: boolean; message?: string }> => {
     setIsLoading(true);
-    
     try {
-      const response = await signIn(email, password);
-      
+      // Use the correct login function that returns backend error messages
+      const response = await import('@/utils/auth').then(m => m.login(email, password));
       if (response.success && response.user) {
         setUser(response.user);
         setUserRole(response.user.role);
-        return true;
+        return { success: true };
       } else {
-        return false;
+        return { success: false, message: response.message };
       }
     } catch (error) {
       console.error('Login error:', error);
-      return false;
+      return { success: false, message: 'Invalid email or password. Please try again.' };
     } finally {
       setIsLoading(false);
     }

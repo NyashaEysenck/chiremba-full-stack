@@ -35,12 +35,9 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      const success = await login(email, password);
-      
-      if (success) {
-        // Redirect to the page they tried to visit or home
+      const result = await login(email, password);
+      if (result.success) {
         navigate(from, { replace: true });
-        
         toast({
           title: "Login Successful",
           description: "Welcome back!",
@@ -49,16 +46,13 @@ const Login = () => {
       } else {
         toast({
           title: "Login Failed",
-          description: "Invalid email or password. Please try again.",
+          description: result.message || "Invalid email or password. Please try again.",
           variant: "destructive",
         });
       }
     } catch (error: any) {
       console.error("Login error:", error);
-      
-      // Extract the most user-friendly error message
-      let errorMessage = "Invalid email or password";
-      
+      let errorMessage = "Invalid email or password. Please try again.";
       if (error instanceof Error) {
         errorMessage = error.message;
       } else if (typeof error === 'string') {
@@ -66,7 +60,6 @@ const Login = () => {
       } else if (error && typeof error === 'object' && 'message' in error) {
         errorMessage = error.message as string;
       }
-      
       toast({
         title: "Login Failed",
         description: errorMessage,

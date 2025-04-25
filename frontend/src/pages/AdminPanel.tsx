@@ -43,7 +43,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { mongoAPI } from '@/integrations/mongodb/client';
-import { createAccount, deleteUser, assignAdminRole } from '@/utils/auth';
+import { createAccount, deleteUser, assignAdminRole, resetUserAccount } from '@/utils/auth';
 import { User } from '@/components/UserCard';
 import {
   Table,
@@ -68,7 +68,6 @@ const AdminPanel = () => {
   const [newUserOpen, setNewUserOpen] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [newUserRole, setNewUserRole] = useState<'user' | 'staff' | 'admin'>('staff');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -77,9 +76,37 @@ const AdminPanel = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   
-  // Promote confirmation state
-  const [promoteDialogOpen, setPromoteDialogOpen] = useState(false);
-  const [isPromoting, setIsPromoting] = useState(false);
+  // Reset confirmation state
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [resetUser, setResetUser] = useState<User | null>(null);
+  
+  // Function to reset a user's account
+  const handleResetUserAccount = async (user: User) => {
+    if (!user) return;
+    try {
+      const response = await resetUserAccount(user.id);
+      if (response.success) {
+        toast({
+          title: 'Account Reset',
+          description: 'User account reset and setup email resent.',
+        });
+        // Optionally update user status in state (if status is part of user object)
+        fetchUsers();
+      } else {
+        toast({
+          title: 'Error',
+          description: response.message || 'Failed to reset account',
+          variant: 'destructive',
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to reset account',
+        variant: 'destructive',
+      });
+    }
+  };
 
   // Redirect if not authenticated or not an admin
   useEffect(() => {
@@ -138,7 +165,7 @@ const AdminPanel = () => {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name || !email || !password) {
+    if (!name || !email) {
       toast({
         title: "Missing Information",
         description: "Please fill in all fields",
@@ -150,18 +177,18 @@ const AdminPanel = () => {
     setIsSubmitting(true);
     
     try {
-      const response = await createAccount(email, password, name, newUserRole);
+      // Pass empty string for password (backend will ignore and set pending)
+      const response = await createAccount(email, '', name, newUserRole);
       
       if (response.success) {
         toast({
           title: "Success",
-          description: `${newUserRole.charAt(0).toUpperCase() + newUserRole.slice(1)} account created successfully`,
+          description: `${newUserRole.charAt(0).toUpperCase() + newUserRole.slice(1)} account created successfully. Password setup email sent.`,
         });
         
         // Reset form and close dialog
         setName('');
         setEmail('');
-        setPassword('');
         setNewUserOpen(false);
         
         // Refresh user list
@@ -222,50 +249,6 @@ const AdminPanel = () => {
       });
     } finally {
       setIsDeleting(false);
-    }
-  };
-
-  // Function to promote a user to admin
-  const handlePromoteToAdmin = async () => {
-    if (!selectedUser) return;
-    
-    setIsPromoting(true);
-    
-    try {
-      const response = await assignAdminRole(selectedUser.id);
-      
-      if (response.success) {
-        toast({
-          title: "Success",
-          description: "User promoted to admin successfully",
-        });
-        
-        // Update user role in state
-        setUsers(users.map(user => 
-          user.id === selectedUser.id 
-            ? { ...user, role: 'admin' } 
-            : user
-        ));
-        
-        // Close dialog
-        setPromoteDialogOpen(false);
-        setSelectedUser(null);
-      } else {
-        toast({
-          title: "Error",
-          description: response.message || "Failed to promote user",
-          variant: "destructive",
-        });
-      }
-    } catch (error: any) {
-      console.error("Error promoting user:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to promote user",
-        variant: "destructive",
-      });
-    } finally {
-      setIsPromoting(false);
     }
   };
 
@@ -372,6 +355,7 @@ const AdminPanel = () => {
                         <TableHead>Name</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Role</TableHead>
+                        <TableHead>Status</TableHead>
                         <TableHead>Created</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
@@ -392,22 +376,26 @@ const AdminPanel = () => {
                               {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                             </span>
                           </TableCell>
+                          <TableCell>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${user.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                              {user.status ? user.status.charAt(0).toUpperCase() + user.status.slice(1) : 'N/A'}
+                            </span>
+                          </TableCell>
                           <TableCell>{user.createdAt ? formatDate(user.createdAt) : 'N/A'}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end space-x-2">
-                              {user.role !== 'admin' && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    setSelectedUser(user);
-                                    setPromoteDialogOpen(true);
-                                  }}
-                                >
-                                  <Shield className="h-4 w-4 mr-1" />
-                                  <span className="sr-only md:not-sr-only md:inline-block">Promote</span>
-                                </Button>
-                              )}
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => {
+                                  setResetUser(user);
+                                  setResetDialogOpen(true);
+                                }}
+                                className="text-yellow-800 border-yellow-600 hover:bg-yellow-50"
+                              >
+                                <RefreshCw className="h-4 w-4 mr-1" />
+                                <span className="sr-only md:not-sr-only md:inline-block">Reset</span>
+                              </Button>
                               <Button
                                 variant="destructive"
                                 size="sm"
@@ -470,6 +458,7 @@ const AdminPanel = () => {
                       <TableRow>
                         <TableHead>Name</TableHead>
                         <TableHead>Email</TableHead>
+                        <TableHead>Status</TableHead>
                         <TableHead>Created</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
@@ -481,6 +470,11 @@ const AdminPanel = () => {
                           <TableRow key={user.id}>
                             <TableCell className="font-medium">{user.name}</TableCell>
                             <TableCell>{user.email}</TableCell>
+                            <TableCell>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${user.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                                {user.status ? user.status.charAt(0).toUpperCase() + user.status.slice(1) : 'N/A'}
+                              </span>
+                            </TableCell>
                             <TableCell>{user.createdAt ? formatDate(user.createdAt) : 'N/A'}</TableCell>
                             <TableCell className="text-right">
                               <Button
@@ -544,6 +538,7 @@ const AdminPanel = () => {
                       <TableRow>
                         <TableHead>Name</TableHead>
                         <TableHead>Email</TableHead>
+                        <TableHead>Status</TableHead>
                         <TableHead>Created</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
@@ -555,19 +550,25 @@ const AdminPanel = () => {
                           <TableRow key={user.id}>
                             <TableCell className="font-medium">{user.name}</TableCell>
                             <TableCell>{user.email}</TableCell>
+                            <TableCell>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${user.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                                {user.status ? user.status.charAt(0).toUpperCase() + user.status.slice(1) : 'N/A'}
+                              </span>
+                            </TableCell>
                             <TableCell>{user.createdAt ? formatDate(user.createdAt) : 'N/A'}</TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end space-x-2">
                                 <Button
-                                  variant="outline"
+                                  variant="secondary"
                                   size="sm"
                                   onClick={() => {
-                                    setSelectedUser(user);
-                                    setPromoteDialogOpen(true);
+                                    setResetUser(user);
+                                    setResetDialogOpen(true);
                                   }}
+                                  className="text-yellow-800 border-yellow-600 hover:bg-yellow-50"
                                 >
-                                  <Shield className="h-4 w-4 mr-1" />
-                                  <span className="sr-only md:not-sr-only md:inline-block">Promote</span>
+                                  <RefreshCw className="h-4 w-4 mr-1" />
+                                  <span className="sr-only md:not-sr-only md:inline-block">Reset</span>
                                 </Button>
                                 <Button
                                   variant="destructive"
@@ -637,17 +638,6 @@ const AdminPanel = () => {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
                 <Label htmlFor="role">Role</Label>
                 <Select 
                   value={newUserRole} 
@@ -661,7 +651,6 @@ const AdminPanel = () => {
                     <SelectValue placeholder="Select a role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="user">Regular User</SelectItem>
                     <SelectItem value="staff">Staff</SelectItem>
                     <SelectItem value="admin">Administrator</SelectItem>
                   </SelectContent>
@@ -744,54 +733,50 @@ const AdminPanel = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Promote to Admin Dialog */}
-      <Dialog open={promoteDialogOpen} onOpenChange={setPromoteDialogOpen}>
+      {/* Reset Confirmation Dialog */}
+      <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Promote to Admin</DialogTitle>
+            <DialogTitle>Confirm Account Reset</DialogTitle>
             <DialogDescription>
-              Are you sure you want to promote this user to admin? They will have full access to all administrative features.
+              Are you sure you want to reset this user's account? This will set their password to null, change their status to pending, and resend the setup email.
             </DialogDescription>
           </DialogHeader>
-          
-          {selectedUser && (
+          {resetUser && (
             <div className="py-4">
-              <Alert>
-                <Shield className="h-4 w-4" />
-                <AlertTitle>Confirmation</AlertTitle>
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Warning</AlertTitle>
                 <AlertDescription>
-                  You are about to promote {selectedUser.name} ({selectedUser.email}) to admin role.
+                  You are about to reset the account for: {resetUser.name} ({resetUser.email})
                 </AlertDescription>
               </Alert>
             </div>
           )}
-          
           <DialogFooter>
             <Button
               type="button"
               variant="outline"
               onClick={() => {
-                setPromoteDialogOpen(false);
-                setSelectedUser(null);
+                setResetDialogOpen(false);
+                setResetUser(null);
               }}
             >
               Cancel
             </Button>
             <Button
-              onClick={handlePromoteToAdmin}
-              disabled={isPromoting}
+              variant="secondary"
+              className="text-yellow-800 border-yellow-600 hover:bg-yellow-50"
+              onClick={async () => {
+                if (resetUser) {
+                  await handleResetUserAccount(resetUser);
+                  setResetDialogOpen(false);
+                  setResetUser(null);
+                }
+              }}
             >
-              {isPromoting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Promoting...
-                </>
-              ) : (
-                <>
-                  <Shield className="h-4 w-4 mr-2" />
-                  Promote to Admin
-                </>
-              )}
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Confirm Reset
             </Button>
           </DialogFooter>
         </DialogContent>

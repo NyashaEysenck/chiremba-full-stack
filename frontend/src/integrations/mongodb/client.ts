@@ -15,6 +15,7 @@ export interface User {
   name: string;
   role: string;
   createdAt?: string;
+  status?: string;
 }
 
 // Authentication API
@@ -40,9 +41,12 @@ const authAPI = {
           // that falls out of the range of 2xx
           const statusCode = error.response.status;
           const errorData = error.response.data;
-          
+          // Always throw the backend message if present
+          if (errorData && errorData.message) {
+            throw new Error(errorData.message);
+          }
           if (statusCode === 400) {
-            throw new Error(errorData.message || 'Invalid email or password');
+            throw new Error('Invalid email or password');
           } else if (statusCode === 401) {
             throw new Error('Unauthorized: Please check your credentials');
           } else if (statusCode === 403) {
@@ -150,7 +154,8 @@ const usersAPI = {
         email: user.email,
         name: user.name,
         role: user.role,
-        createdAt: user.createdAt
+        createdAt: user.createdAt,
+        status: user.status
       }));
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -209,6 +214,22 @@ const usersAPI = {
       }
     });
     
+    return response.data;
+  },
+  
+  // Reset a user's account (admin only)
+  resetUserAccount: async (userId: string) => {
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+    // This assumes a backend endpoint exists for resetting a user account
+    // POST /users/:userId/reset-account
+    const response = await axios.post(`${API_BASE_URL}/users/${userId}/reset-account`, {}, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
     return response.data;
   }
 };

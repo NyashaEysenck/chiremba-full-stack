@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,6 +11,7 @@ import Chatbot from "./pages/Chatbot";
 import ImageDiagnosis from "./pages/ImageDiagnosis";
 import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
+import SetupPassword from '@/pages/SetupPassword';
 import { useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import { ensureAdminUser } from "./utils/auth";
@@ -118,6 +118,7 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } 
       />
+      <Route path="/setup-password" element={<SetupPassword />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

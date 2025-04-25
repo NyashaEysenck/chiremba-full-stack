@@ -9,6 +9,7 @@ export interface User {
   name: string;
   role: string;
   createdAt?: string;
+  status?: string; // Add status to match backend and admin panel usage
 }
 
 // User Card Component props

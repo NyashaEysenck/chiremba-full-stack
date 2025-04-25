@@ -16,7 +16,7 @@ const API_ENDPOINTS: Record<string, string> = {
 };
 
 // More detailed description for each condition to improve user feedback
-const CONDITION_DETAILS: Record<string, {
+export const CONDITION_DETAILS: Record<string, {
   description: string;
   recommendations: string;
   urgency: 'high' | 'medium' | 'low';

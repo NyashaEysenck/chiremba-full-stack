@@ -1,5 +1,8 @@
 import { toast } from "@/hooks/use-toast";
 
+// Chat history storage
+const chatHistories = new Map<string, any>();
+
 // Proxy Google Generative AI (Gemini) to backend
 export async function generateAIResponse(prompt: string, chatId?: string): Promise<string> {
   try {
@@ -19,10 +22,10 @@ export async function generateAIResponse(prompt: string, chatId?: string): Promi
 export async function analyzeHealthSymptoms(symptoms: string): Promise<any> {
   try {
     const prompt = `As a medical assistant, analyze these symptoms and provide a structured response with the following sections:
-1. Possible conditions (list the top 3 most likely conditions based on the symptoms)
+1. Possible conditions (list the top 3 most likely conditions based on the symptoms. Try to write the most common name for the condition if it is available)
 2. Suggested medications or treatments for each condition
-3. Urgency level (low, medium, high)
 4. When to seek professional medical help
+5. Disclaimer
 
 User symptoms: ${symptoms}
 
@@ -33,7 +36,7 @@ IMPORTANT: Begin each section with EXACTLY these headings:
 - "When to seek professional medical help"
 - "DISCLAIMER"
 
-Format your response for easy reading with numbered lists. Include a disclaimer that this is not a substitute for professional medical advice. DO NOT use asterisk formatting like ** around any text.`;
+Format your response for easy reading with numbered lists. Include a disclaimer that this is not a substitute for professional medical advice. DO NOT use asterisk formatting like ** or * around any text or quotes "" around the text or any weird formatting`;
 
     const response = await generateAIResponse(prompt);
     console.log("Raw symptom analysis response:", response);
@@ -53,48 +56,31 @@ Format your response for easy reading with numbered lists. Include a disclaimer 
 
 // Start or continue a chat session with memory
 export async function startOrContinueChat(chatId: string): Promise<void> {
-  // No-op for now, as we're proxying to the backend
+  if (!chatHistories.has(chatId)) {
+    const messages = [];
+    chatHistories.set(chatId, messages);
+  }
 }
 
 export async function getHealthChatResponse(userMessage: string, chatId: string, language: string = "english"): Promise<string> {
   try {
-    // Ensure a chat session exists (no-op for now)
-    // await startOrContinueChat(chatId);
-    
-    // Get the chat session (no-op for now)
-    // const chat = chatHistories.get(chatId);
-    // if (!chat) {
-    //   throw new Error("Chat session not found");
-    // }
-    
-    // Use the stored chat to maintain context (no-op for now)
-    // const systemPrompt = `You are Chiremba, a friendly and knowledgeable health assistant. 
-    // Respond to the following health-related question or comment in a helpful, informative, and compassionate way.
-    // If the query suggests a serious medical condition, advise the user to seek professional medical help.
-    
-    // Use appropriate formatting with line breaks to improve readability.
-    // DO NOT use asterisks (**) in your response to highlight text or for formatting.
-    
-    // IMPORTANT: All responses must be in ${language.toUpperCase()} language.`;
-    
-    // Add system prompt if this is a new conversation (no-op for now)
-    // if (!chat.history || chat.history.length === 0) {
-    //   await chat.sendMessage(systemPrompt);
-    // }
-    
-    // Send the user message and get response
-    const prompt = `You are Chiremba, a friendly and knowledgeable health assistant. 
-    Respond to the following health-related question or comment in a helpful, informative, and compassionate way.
-    If the query suggests a serious medical condition, advise the user to seek professional medical help.
-    
-    Use appropriate formatting with line breaks to improve readability.
-    DO NOT use asterisks (**) in your response to highlight text or for formatting.
-    
-    IMPORTANT: All responses must be in ${language.toUpperCase()} language.
+    await startOrContinueChat(chatId);
+    const messages = chatHistories.get(chatId);
 
-    User message: ${userMessage}`;
-    const result = await generateAIResponse(prompt);
-    return result;
+    const systemPrompt = `You are Chiremba, a friendly and knowledgeable health assistant. \nRespond to the following health-related question or comment in a helpful, informative, and compassionate way.\nIf the query suggests a serious medical condition, advise the user to seek professional medical help.\n\nUse appropriate formatting with line breaks to improve readability.\nDO NOT use asterisks (**) in your response to highlight text or for formatting.\n\nIMPORTANT: All responses must be in ${language.toUpperCase()} language.`;
+
+    if (messages.length === 0) {
+      messages.push({ role: "system", content: systemPrompt });
+    }
+
+    messages.push({ role: "user", content: userMessage });
+
+    const prompt = messages.map((message: any) => `${message.role}: ${message.content}`).join('\n');
+    const response = await generateAIResponse(prompt);
+    const text = response;
+    messages.push({ role: "assistant", content: text });
+
+    return text;
   } catch (error) {
     console.error("Error getting health chat response:", error);
     return "I'm sorry, I'm having trouble responding right now. Please try again in a moment.";
@@ -103,7 +89,9 @@ export async function getHealthChatResponse(userMessage: string, chatId: string,
 
 // Function to clear chat history for a specific chat
 export function clearChatHistory(chatId: string): void {
-  // No-op for now, as we're proxying to the backend
+  if (chatHistories.has(chatId)) {
+    chatHistories.delete(chatId);
+  }
 }
 
 // Placeholder function for enhanced text-to-speech (to be implemented with ElevenLabs)
@@ -112,56 +100,3 @@ export async function getEnhancedTextToSpeech(text: string): Promise<void> {
   console.log("Enhanced TTS would process:", text);
 }
 
-// Function to load the brain tumor model (mockup for now)
-export async function loadBrainTumorModel(): Promise<void> {
-  console.log("Loading brain tumor detection model...");
-  // This would actually load a TensorFlow.js model in a real implementation
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      console.log("Brain tumor model loaded");
-      resolve();
-    }, 1000);
-  });
-}
-
-// Function to detect brain tumors (mockup for now)
-export async function detectBrainTumor(imageElement: HTMLImageElement): Promise<{ hasTumor: boolean; confidence: number }> {
-  console.log("Analyzing brain scan for tumors...");
-  // This would use a real ML model in a production implementation
-  // For now, we'll return a random result for demonstration purposes
-  
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // Randomly decide if a tumor is detected (for demo purposes)
-      const random = Math.random();
-      const hasTumor = random > 0.5;
-      const confidence = hasTumor ? 
-        Math.floor(70 + random * 25) : // 70-95% confidence if tumor detected
-        Math.floor(75 + random * 20);  // 75-95% confidence if no tumor
-      
-      console.log(`Analysis complete: ${hasTumor ? 'Tumor detected' : 'No tumor detected'} with ${confidence}% confidence`);
-      resolve({ hasTumor, confidence });
-    }, 2000);
-  });
-}
-
-// New function to analyze medical documents or images (will be implemented in future)
-export async function analyzeMedicalDocument(documentText: string): Promise<string> {
-  try {
-    const prompt = `Extract and summarize the key medical information from this document:
-    ${documentText}
-    
-    Focus on:
-    1. Patient information
-    2. Diagnosis details
-    3. Treatment recommendations
-    4. Follow-up information
-    
-    DO NOT use asterisks (**) in your response for any formatting.`;
-
-    return await generateAIResponse(prompt);
-  } catch (error) {
-    console.error("Error analyzing medical document:", error);
-    return "Sorry, there was an error analyzing this document. Please try again later.";
-  }
-}
