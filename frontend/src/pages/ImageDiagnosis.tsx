@@ -428,7 +428,7 @@ const ImageDiagnosis = () => {
     if (isFullCrop) {
       canvas.width = image.naturalWidth;
       canvas.height = image.naturalHeight;
-      ctx?.drawImage(image, 0, 0);
+      ctx.drawImage(image, 0, 0);
     } else {
       // Set canvas dimensions to crop size
       canvas.width = pixelCrop.width;
@@ -1196,21 +1196,6 @@ const ImageDiagnosis = () => {
                           <strong>Note:</strong> If your condition looks more like any of these alternatives, 
                           consider mentioning them to your healthcare provider.
                         </p>
-                      </div>
-                    )}
-                    
-                    {/* Recommendations Section */}
-                    {analysisResult?.recommendations && (
-                      <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
-                        <div className="flex">
-                          <Info className="h-5 w-5 text-blue-700 mr-2 flex-shrink-0" />
-                          <div>
-                            <h3 className="text-sm font-medium text-blue-800">Recommendations</h3>
-                            <p className="mt-1 text-sm text-blue-700">
-                              {analysisResult.recommendations}
-                            </p>
-                          </div>
-                        </div>
                       </div>
                     )}
                     
