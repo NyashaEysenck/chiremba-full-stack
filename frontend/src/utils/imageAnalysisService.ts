@@ -120,6 +120,27 @@ export const CONDITION_DETAILS: Record<string, {
   }
 };
 
+// Utility to poll the backend health endpoint until ready
+async function waitForBackendReady(maxRetries = 10, delayMs = 1000): Promise<boolean> {
+  const healthUrl = `${import.meta.env.VITE_FASTAPI_URL}/health`;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const res = await fetch(healthUrl, { method: 'GET', mode: 'cors' });
+      if (res.ok) {
+        const data = await res.json();
+        // Accept "healthy" or similar status (customize as needed)
+        if (data.status === 'healthy' || data.status === true) {
+          return true;
+        }
+      }
+    } catch (e) {
+      // Ignore fetch errors, will retry
+    }
+    await new Promise(resolve => setTimeout(resolve, delayMs));
+  }
+  return false;
+}
+
 // Add a new function to test connectivity first
 export async function testServerConnection(file: File): Promise<boolean> {
   try {
@@ -159,6 +180,11 @@ export async function testServerConnection(file: File): Promise<boolean> {
  */
 export async function analyzeImage(file: File, modelType: string): Promise<any> {
   try {
+    // Wait for backend readiness before proceeding (fix for initial connection issue)
+    const backendReady = await waitForBackendReady(10, 1000); // 10 retries, 1s apart
+    if (!backendReady) {
+      throw new Error('The analysis server is still starting up or not ready. Please try again in a moment.');
+    }
     // First test server connectivity
     const serverAvailable = await testServerConnection(file);
     
