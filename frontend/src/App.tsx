@@ -92,7 +92,7 @@ const AppRoutes = () => {
   }
   
   // If user is already logged in, redirect them away from login page or reset password page
-  if (isAuthenticated && (location.pathname === '/login' || location.pathname === '/setup-password')) {
+  if (isAuthenticated && (location.pathname === '/login' || location.pathname === '/setup-password' || location.pathname.startsWith('/setup-password'))) {
     return <Navigate to="/" replace />;
   }
 
