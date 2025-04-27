@@ -161,7 +161,10 @@ const Chatbot = () => {
   
   // Auto scroll to bottom on new messages
   useEffect(() => {
-    scrollToBottom();
+    // Only scroll the chat messages container, not the whole page
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'nearest' });
+    }
   }, [messages]);
   
   const scrollToBottom = () => {
