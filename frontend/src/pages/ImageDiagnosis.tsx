@@ -29,7 +29,6 @@ import { Switch } from "@/components/ui/switch";
 import { analyzeImage as analyzeImageAPI } from '@/utils/imageAnalysisService';
 import { CONDITION_DETAILS } from '@/utils/imageAnalysisService';
 import { requestLungCancerGradCAM } from '@/utils/gradcamService';
-import { generateAIResponse } from '../utils/googleAI';
 
 const ImageDiagnosis = () => {
   const { isAuthenticated } = useAuth();
@@ -61,10 +60,6 @@ const ImageDiagnosis = () => {
   // Grad-CAM state
   const [gradcamImage, setGradcamImage] = useState<string | null>(null);
   const [isGradcamLoading, setIsGradcamLoading] = useState(false);
-  
-  // AI-enhanced description state
-  const [aiDescription, setAIDescription] = useState<string | null>(null);
-  const [isAIDescriptionLoading, setIsAIDescriptionLoading] = useState(false);
   
   // Available models for detection
   const models = [
@@ -428,7 +423,7 @@ const ImageDiagnosis = () => {
     if (isFullCrop) {
       canvas.width = image.naturalWidth;
       canvas.height = image.naturalHeight;
-      ctx.drawImage(image, 0, 0);
+      ctx?.drawImage(image, 0, 0);
     } else {
       // Set canvas dimensions to crop size
       canvas.width = pixelCrop.width;
@@ -583,55 +578,6 @@ const ImageDiagnosis = () => {
       setIsGradcamLoading(false);
     }
   };
-  
-  // Utility to generate AI-enhanced description
-  const enhanceDescriptionWithAI = async (fixedDescription: string, modelOutputs: any) => {
-    setIsAIDescriptionLoading(true);
-    // Build a clean, structured prompt for Gemini
-    let prompt = `You are a clinical assistant. Given the following AI model results, generate a clear, concise, and factual description for a medical report. Do not invent or hallucinate information. If unsure, use the provided fixed description as is.\n\n`;
-
-    prompt += `Diagnosis/Condition: ${modelOutputs.predicted_class || modelOutputs.condition || 'Unknown'}\n`;
-    if (typeof modelOutputs.confidence !== 'undefined') {
-      prompt += `Confidence: ${modelOutputs.confidence}%\n`;
-    }
-    if (modelOutputs.alternatives && Array.isArray(modelOutputs.alternatives)) {
-      prompt += `Alternative possibilities: ${modelOutputs.alternatives.map((alt: any) => `${alt.label || alt.name || alt.condition || 'Unknown'} (urgency: ${alt.urgency || 'n/a'})`).join('; ')}\n`;
-    }
-    if (modelOutputs.second_prediction) {
-      prompt += `Second prediction: ${JSON.stringify(modelOutputs.second_prediction)}\n`;
-    }
-    if (modelOutputs.all_probabilities) {
-      prompt += `All probabilities: ${JSON.stringify(modelOutputs.all_probabilities)}\n`;
-    }
-    prompt += `\nFixed description (for reference, do not copy verbatim unless unsure):\n"${fixedDescription}"\n\n`;
-    prompt += `Write a short(3-4 sentences), readable, and professional summary suitable for a patient report. Avoid repetition, keep formatting clean, and do not include any disclaimers or extra commentary.`;
-
-    try {
-      console.log('Calling Gemini with prompt:', prompt); 
-      const aiResult = await generateAIResponse(prompt);
-      console.log('Gemini response:', aiResult); 
-      if (aiResult && typeof aiResult === 'string' && aiResult.trim().length > 0) {
-        setAIDescription(aiResult.trim());
-      } else {
-        setAIDescription(null);
-      }
-    } catch (err) {
-      console.error('Gemini error:', err); 
-      setAIDescription(null);
-    } finally {
-      setIsAIDescriptionLoading(false);
-    }
-  };
-  
-  // When analysisResult changes, try to enhance the description with Gemini
-  useEffect(() => {
-    setAIDescription(null);
-    console.log('analysisResult changed:', analysisResult);
-    if (analysisResult && (analysisResult.predicted_class || analysisResult.condition)) {
-      const fixedDescription = CONDITION_DETAILS[selectedModel]?.description || analysisResult.description || '';
-      enhanceDescriptionWithAI(fixedDescription, analysisResult);
-    }
-  }, [analysisResult, selectedModel]);
   
   // Redirect if not authenticated
   if (!isAuthenticated) {
@@ -1115,7 +1061,6 @@ const ImageDiagnosis = () => {
                               {analysisResult.condition === 'Normal' ? 'No pneumonia detected' : 'Pneumonia detected'}
                             </span>
                           )}
-                          
                           {/* Low confidence warning */}
                           {analysisResult.lowConfidence && (
                             <span className="ml-2 px-2 py-1 text-xs font-normal rounded bg-yellow-100 text-yellow-800">
@@ -1123,25 +1068,13 @@ const ImageDiagnosis = () => {
                             </span>
                           )}
                         </h2>
-                        
                         {/* Display model info for skin infection */}
                         {selectedModel === 'skin-infection' && analysisResult.modelUsed && (
                           <div className="mt-1 text-xs font-medium text-indigo-600">
                             Using {analysisResult.modelUsed} model
                           </div>
                         )}
-                        
-                        <div className="mt-4">
-                          <h3 className="text-lg font-semibold">Description</h3>
-                          {isAIDescriptionLoading ? (
-                            <div className="text-gray-500 italic">Generating description...</div>
-                          ) : (
-                            <div className="text-gray-700">
-                              {aiDescription || (CONDITION_DETAILS[selectedModel]?.description || analysisResult?.description || '')}
-                            </div>
-                          )}
-                        </div>
-                        
+                        <p className="mt-1 text-gray-600">{analysisResult.description}</p>
                         <div className="mt-3 flex items-center">
                           <span className="text-sm font-medium text-gray-700">Confidence:</span>
                           <div className="ml-2 h-2 w-24 bg-gray-200 rounded-full">
@@ -1167,7 +1100,6 @@ const ImageDiagnosis = () => {
                         </div>
                       </div>
                     </div>
-                    
                     {/* Display alternative diagnoses for skin infection */}
                     {selectedModel === 'skin-infection' && analysisResult.alternatives && analysisResult.alternatives.length > 0 && (
                       <div className="mt-6 p-4 bg-amber-50 rounded-lg border border-amber-100">
@@ -1198,11 +1130,40 @@ const ImageDiagnosis = () => {
                         </p>
                       </div>
                     )}
-                    
-                    <div className="mt-4 text-xs text-gray-500">
-                      <strong>Disclaimer:</strong> This is an AI-assisted analysis and not a definitive medical diagnosis. 
-                      Please consult with a qualified healthcare professional for proper evaluation and treatment.
+                    <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                      <div className="flex">
+                        <Info className="h-5 w-5 text-blue-700 mr-2 flex-shrink-0" />
+                        <div>
+                          <h3 className="text-sm font-medium text-blue-800">Recommendations</h3>
+                          <p className="mt-1 text-sm text-blue-700">
+                            {analysisResult.recommendations}
+                          </p>
+                        </div>
+                      </div>
                     </div>
+                    {/* Additional tips for nail fungus specific to skin infections */}
+                    {selectedModel === 'skin-infection' && (
+                      <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <h3 className="text-sm font-medium text-gray-800 mb-1">Diagnosis Tips</h3>
+                        <ul className="text-xs text-gray-600 list-disc pl-5 space-y-1">
+                          <li>Nail fungus and impetigo can sometimes look similar in images</li>
+                          <li>For nail fungus detection, ensure your image clearly shows the affected nail</li>
+                          <li>Try taking the photo in natural light without shadows</li>
+                          <li>Include both the nail and some surrounding skin for better analysis</li>
+                        </ul>
+                      </div>
+                    )}
+                    {/* Additional tips for lung cancer detection */}
+                    {selectedModel === 'lung-cancer' && (
+                      <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <h3 className="text-sm font-medium text-gray-800 mb-1">Lung Cancer CT Scan Guidelines</h3>
+                        <ul className="text-xs text-gray-600 list-disc pl-5 space-y-1">
+                          <li>Use clear, high-resolution CT scan images of the lungs</li>
+                          <li>Ensure the image shows a complete cross-section of the chest</li>
+                          <li>The model works best with axial (horizontal) CT slices</li>
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
