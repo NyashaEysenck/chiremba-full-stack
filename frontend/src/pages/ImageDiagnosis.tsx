@@ -428,7 +428,7 @@ const ImageDiagnosis = () => {
     if (isFullCrop) {
       canvas.width = image.naturalWidth;
       canvas.height = image.naturalHeight;
-      ctx?.drawImage(image, 0, 0);
+      ctx.drawImage(image, 0, 0);
     } else {
       // Set canvas dimensions to crop size
       canvas.width = pixelCrop.width;
@@ -524,48 +524,19 @@ const ImageDiagnosis = () => {
     }
   };
   
-  // --- PATCH: Normalize analysisResult to match previous implementation ---
-  const normalizeAnalysisResult = (result: any, selectedModel: string): any => {
-    if (!result) return result;
-    // Brain Tumor, Pneumonia, Lung Cancer
-    if (["brain-tumor", "pneumonia", "lung-cancer"].includes(selectedModel)) {
-      return {
-        condition: result.condition || result.predicted_class || '',
-        urgency: result.urgency || '',
-        description: result.description || '',
-        confidence: typeof result.confidence === 'number' ? result.confidence : (result.confidence_score || 0),
-        lowConfidence: result.lowConfidence || result.confidence_score < 60,
-        modelUsed: undefined,
-        alternatives: undefined,
-        recommendations: result.recommendations || '',
-      };
-    }
-    // Skin Infection
-    if (selectedModel === "skin-infection") {
-      return {
-        condition: result.condition || result.predicted_class || '',
-        urgency: result.urgency || '',
-        description: result.description || '',
-        confidence: typeof result.confidence === 'number' ? result.confidence : (result.confidence_score || 0),
-        lowConfidence: result.lowConfidence || result.confidence_score < 60,
-        modelUsed: result.modelUsed || result.model_used || '',
-        alternatives: result.alternatives || [],
-        recommendations: result.recommendations || '',
-      };
-    }
-    return result;
-  };
-  
   const analyzeImage = async () => {
     if (!selectedFile) return;
+    
     setIsAnalyzing(true);
+    
     try {
       console.log(`Analyzing image with model: ${selectedModel}`);
       console.log(`Image file: ${selectedFile.name}, size: ${selectedFile.size} bytes`);
+      
       // Call our backend API service with the image
       const result = await analyzeImageAPI(selectedFile, selectedModel);
-      // --- PATCH: Normalize result before setting ---
-      setAnalysisResult(normalizeAnalysisResult(result, selectedModel));
+      setAnalysisResult(result);
+      
       console.log("Analysis completed successfully:", result);
     } catch (error) {
       console.error('Error analyzing image:', error);
@@ -748,7 +719,7 @@ const ImageDiagnosis = () => {
               </div>
               {/* Subtle hint text */}
               <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent pointer-events-none">
-                <p className="text-xs text-white/70">
+                <p className="text-xs text-center text-white/70">
                   Center the affected area and click to capture
                 </p>
               </div>
