@@ -428,7 +428,7 @@ const ImageDiagnosis = () => {
     if (isFullCrop) {
       canvas.width = image.naturalWidth;
       canvas.height = image.naturalHeight;
-      ctx.drawImage(image, 0, 0);
+      ctx?.drawImage(image, 0, 0);
     } else {
       // Set canvas dimensions to crop size
       canvas.width = pixelCrop.width;
@@ -526,35 +526,25 @@ const ImageDiagnosis = () => {
   
   const analyzeImage = async () => {
     if (!selectedFile) return;
-    
     setIsAnalyzing(true);
-    
     try {
       console.log(`Analyzing image with model: ${selectedModel}`);
       console.log(`Image file: ${selectedFile.name}, size: ${selectedFile.size} bytes`);
-      
-      // Call our backend API service with the image
+      // Use imageAnalysisService, which returns the normalized output structure
       const result = await analyzeImageAPI(selectedFile, selectedModel);
       setAnalysisResult(result);
-      
       console.log("Analysis completed successfully:", result);
     } catch (error) {
       console.error('Error analyzing image:', error);
-      
-      // Provide more detailed error feedback to the user
       let errorMessage = "Failed to analyze the image. Please try again.";
-      
       if (error instanceof Error) {
         errorMessage = error.message;
-        
-        // Check for specific error types
         if (errorMessage.includes("fetch")) {
           errorMessage = `Failed to connect to the analysis server. Please make sure the backend server is running at ${import.meta.env.VITE_FASTAPI_URL || 'the configured URL'}.`;
         } else if (errorMessage.includes("NetworkError")) {
           errorMessage = "Network error: Please check your internet connection and ensure the backend server is running.";
         }
       }
-      
       toast({
         title: "Analysis Failed",
         description: errorMessage,
