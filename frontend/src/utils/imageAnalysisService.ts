@@ -56,10 +56,35 @@ export const CONDITION_DETAILS: Record<string, {
   },
   
   // Skin infection conditions
-  'Cellulitis': {
-    description: 'Cellulitis is a common bacterial skin infection that causes redness, swelling, and pain in the infected area. It can occur anywhere on the body.',
-    recommendations: 'Consultation with a healthcare provider is needed. Treatment typically includes antibiotics, elevation of the affected area, and proper wound care.',
+  'Chickenpox': {
+    description: 'Chickenpox is a highly contagious viral infection characterized by an itchy, blister-like rash.',
+    recommendations: 'Avoid scratching, use calamine lotion, and consult a healthcare provider for antiviral therapy if needed.',
     urgency: 'medium'
+  },
+  'Cowpox': {
+    description: 'Cowpox is a rare viral skin infection that causes pustular lesions, usually acquired from animals.',
+    recommendations: 'Seek medical attention for lesion care and monitoring. Most cases resolve without treatment.',
+    urgency: 'medium'
+  },
+  'HFMD': {
+    description: 'Hand, Foot, and Mouth Disease (HFMD) is a common viral illness in children causing sores and rash.',
+    recommendations: 'Maintain hydration, manage fever, and consult a doctor if symptoms worsen.',
+    urgency: 'low'
+  },
+  'Healthy': {
+    description: 'No signs of skin disease detected in the provided image.',
+    recommendations: 'No action needed. Maintain good hygiene and monitor for any changes.',
+    urgency: 'low'
+  },
+  'Measles': {
+    description: 'Measles is a highly contagious viral disease with fever and a characteristic rash.',
+    recommendations: 'Seek medical attention. Supportive care and isolation are important. Vaccination prevents measles.',
+    urgency: 'high'
+  },
+  'Monkeypox': {
+    description: 'Monkeypox is a rare viral disease causing fever, rash, and swollen lymph nodes.',
+    recommendations: 'Consult a healthcare provider for diagnosis and supportive care. Isolate to prevent spread.',
+    urgency: 'high'
   },
   'Athlete-Foot': {
     description: 'Athlete\'s foot (tinea pedis) is a fungal infection that typically begins between the toes. It can cause a scaly, red rash that usually causes itching, stinging, and burning.',
@@ -69,11 +94,6 @@ export const CONDITION_DETAILS: Record<string, {
   'Impetigo': {
     description: 'Impetigo is a highly contagious skin infection that causes red sores that can break open, ooze fluid, and develop a honey-colored crust.',
     recommendations: 'Consult with a healthcare provider. Treatment typically includes antibiotic ointment or oral antibiotics, and keeping the area clean.',
-    urgency: 'medium'
-  },
-  'Chickenpox': {
-    description: 'Chickenpox is a highly contagious viral infection characterized by an itchy, blister-like rash that appears first on the torso and face, then spreads throughout the body.',
-    recommendations: 'Isolation to prevent spread, calamine lotion for itching, and acetaminophen for fever. Avoid aspirin. Consult a healthcare provider, especially for adults or severe cases.',
     urgency: 'medium'
   },
   'Cutaneous Larva Migrans': {
