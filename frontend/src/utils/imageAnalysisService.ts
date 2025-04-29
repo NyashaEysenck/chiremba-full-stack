@@ -230,12 +230,17 @@ export async function analyzeImage(file: File, modelType: string): Promise<any> 
     const formData = new FormData();
     formData.append('file', file);
 
-    console.log(`Sending request to: ${import.meta.env.VITE_FASTAPI_URL}${endpoint}`);
+    // Determine which API URL to use based on the model type
+    const baseUrl = modelType === 'skin-infection' 
+      ? import.meta.env.VITE_SKIN_SERVICE_URL 
+      : import.meta.env.VITE_FASTAPI_URL;
+
+    console.log(`Sending request to: ${baseUrl}${endpoint}`);
     
     // For testing purposes, use the test endpoint
     const useTestEndpoint = false; // Changed to false to use the real model endpoints
     
-    const url = useTestEndpoint ? `${import.meta.env.VITE_FASTAPI_URL}/test` : `${import.meta.env.VITE_FASTAPI_URL}${endpoint}`;
+    const url = useTestEndpoint ? `${baseUrl}/test` : `${baseUrl}${endpoint}`;
     
     const response = await fetch(url, {
       method: 'POST',
