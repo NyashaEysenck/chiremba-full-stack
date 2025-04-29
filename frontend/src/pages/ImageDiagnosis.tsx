@@ -1191,50 +1191,63 @@ const ImageDiagnosis = () => {
                       </div>
                     )}
                     {/* Report Generation Buttons */}
-                    <div className="flex space-x-2 mt-4">
-                      <button
-                        onClick={async () => {
-                          const now = new Date();
-                          const imageData = preview || '';
-                          await downloadReport({
-                            date: now.toLocaleDateString(),
-                            time: now.toLocaleTimeString(),
-                            condition: analysisResult.condition,
-                            confidence: analysisResult.confidence,
-                            description: analysisResult.description,
-                            urgency: analysisResult.urgency,
-                            modelUsed: models.find(m => m.id === selectedModel)?.name || '',
-                            imageData,
-                            alternatives: analysisResult.alternatives,
-                            aiExplanation: aiExplanation || analysisResult.aiExplanation
-                          });
-                        }}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                      >
-                        Download Report
-                      </button>
-                      <button
-                        onClick={() => {
-                          const now = new Date();
-                          const imageData = preview || '';
-                          printReport({
-                            date: now.toLocaleDateString(),
-                            time: now.toLocaleTimeString(),
-                            condition: analysisResult.condition,
-                            confidence: analysisResult.confidence,
-                            description: analysisResult.description,
-                            urgency: analysisResult.urgency,
-                            modelUsed: models.find(m => m.id === selectedModel)?.name || '',
-                            imageData,
-                            alternatives: analysisResult.alternatives,
-                            aiExplanation: aiExplanation || analysisResult.aiExplanation
-                          });
-                        }}
-                        className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
-                      >
-                        Print Report
-                      </button>
-                    </div>
+                    {analysisResult && (
+                      <div className="flex flex-col space-y-2 mt-4">
+                        {/* Show loading or error state for AI explanation */}
+                        {!aiExplanation && (
+                          <div className="flex items-center space-x-2 text-blue-600 text-sm">
+                            <Loader2 className="animate-spin h-4 w-4" />
+                            <span>Generating detailed AI analysis...</span>
+                          </div>
+                        )}
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={async () => {
+                              const now = new Date();
+                              const imageData = preview || '';
+                              await downloadReport({
+                                date: now.toLocaleDateString(),
+                                time: now.toLocaleTimeString(),
+                                condition: analysisResult.condition,
+                                confidence: analysisResult.confidence,
+                                description: analysisResult.description,
+                                urgency: analysisResult.urgency,
+                                modelUsed: models.find(m => m.id === selectedModel)?.name || '',
+                                imageData,
+                                alternatives: analysisResult.alternatives,
+                                aiExplanation: aiExplanation || analysisResult.aiExplanation
+                              });
+                            }}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                            disabled={!aiExplanation}
+                          >
+                            Download Report
+                          </button>
+                          <button
+                            onClick={() => {
+                              const now = new Date();
+                              const imageData = preview || '';
+                              printReport({
+                                date: now.toLocaleDateString(),
+                                time: now.toLocaleTimeString(),
+                                condition: analysisResult.condition,
+                                confidence: analysisResult.confidence,
+                                description: analysisResult.description,
+                                urgency: analysisResult.urgency,
+                                modelUsed: models.find(m => m.id === selectedModel)?.name || '',
+                                imageData,
+                                alternatives: analysisResult.alternatives,
+                                aiExplanation: aiExplanation || analysisResult.aiExplanation
+                              });
+                            }}
+                            className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+                            disabled={!aiExplanation}
+                          >
+                            Print Report
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
