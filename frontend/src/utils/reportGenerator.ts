@@ -24,22 +24,22 @@ export const downloadReport = async (data: ReportData) => {
         max-width: 750px;
         margin: 0 auto;
         padding: 20px;
-        color: #333;
+        color: #334155;
         font-size: 14px;
       }
       .header {
         text-align: center;
         margin-bottom: 20px;
         padding-bottom: 15px;
-        border-bottom: 2px solid #4f46e5;
+        border-bottom: 2px solid #0ea5e9;
       }
       .header h1 {
-        color: #4f46e5;
+        color: #0ea5e9;
         margin: 0;
         font-size: 20px;
       }
       .header p {
-        color: #666;
+        color: #64748b;
         margin: 5px 0;
         font-size: 12px;
       }
@@ -47,15 +47,15 @@ export const downloadReport = async (data: ReportData) => {
         margin-bottom: 20px;
       }
       .section-title {
-        color: #4f46e5;
+        color: #0ea5e9;
         font-size: 16px;
         margin-bottom: 8px;
         padding-bottom: 4px;
-        border-bottom: 1px solid #e5e7eb;
+        border-bottom: 1px solid #e2e8f0;
       }
       .result-box {
         background-color: #f8fafc;
-        border: 1px solid #e5e7eb;
+        border: 1px solid #e2e8f0;
         border-radius: 8px;
         padding: 12px;
         margin-bottom: 15px;
@@ -70,14 +70,14 @@ export const downloadReport = async (data: ReportData) => {
       }
       .confidence-bar {
         height: 6px;
-        background-color: #e5e7eb;
+        background-color: #e2e8f0;
         border-radius: 3px;
         margin: 8px 0;
         overflow: hidden;
       }
       .confidence-fill {
         height: 100%;
-        background-color: #4f46e5;
+        background-color: #0ea5e9;
         border-radius: 3px;
       }
       .image-container {
@@ -92,13 +92,13 @@ export const downloadReport = async (data: ReportData) => {
       }
       .ai-analysis {
         background-color: #f0f9ff;
-        border: 1px solid #e0f2fe;
+        border: 1px solid #bae6fd;
         border-radius: 8px;
         padding: 12px;
         margin-top: 15px;
       }
       .ai-analysis h3 {
-        color: #0369a1;
+        color: #0284c7;
         margin: 0 0 8px 0;
         font-size: 14px;
       }
@@ -106,7 +106,7 @@ export const downloadReport = async (data: ReportData) => {
         margin-bottom: 12px;
       }
       .ai-section h4 {
-        color: #0369a1;
+        color: #0284c7;
         margin: 0 0 4px 0;
         font-size: 13px;
       }
@@ -117,9 +117,9 @@ export const downloadReport = async (data: ReportData) => {
       .footer {
         margin-top: 20px;
         padding-top: 15px;
-        border-top: 1px solid #e5e7eb;
+        border-top: 1px solid #e2e8f0;
         font-size: 11px;
-        color: #666;
+        color: #64748b;
       }
       p {
         margin: 0 0 8px 0;
@@ -212,22 +212,22 @@ export const printReport = (data: ReportData) => {
         max-width: 750px;
         margin: 0 auto;
         padding: 20px;
-        color: #333;
+        color: #334155;
         font-size: 14px;
       }
       .header {
         text-align: center;
         margin-bottom: 20px;
         padding-bottom: 15px;
-        border-bottom: 2px solid #4f46e5;
+        border-bottom: 2px solid #0ea5e9;
       }
       .header h1 {
-        color: #4f46e5;
+        color: #0ea5e9;
         margin: 0;
         font-size: 20px;
       }
       .header p {
-        color: #666;
+        color: #64748b;
         margin: 5px 0;
         font-size: 12px;
       }
@@ -235,15 +235,15 @@ export const printReport = (data: ReportData) => {
         margin-bottom: 20px;
       }
       .section-title {
-        color: #4f46e5;
+        color: #0ea5e9;
         font-size: 16px;
         margin-bottom: 8px;
         padding-bottom: 4px;
-        border-bottom: 1px solid #e5e7eb;
+        border-bottom: 1px solid #e2e8f0;
       }
       .result-box {
         background-color: #f8fafc;
-        border: 1px solid #e5e7eb;
+        border: 1px solid #e2e8f0;
         border-radius: 8px;
         padding: 12px;
         margin-bottom: 15px;
@@ -258,14 +258,14 @@ export const printReport = (data: ReportData) => {
       }
       .confidence-bar {
         height: 6px;
-        background-color: #e5e7eb;
+        background-color: #e2e8f0;
         border-radius: 3px;
         margin: 8px 0;
         overflow: hidden;
       }
       .confidence-fill {
         height: 100%;
-        background-color: #4f46e5;
+        background-color: #0ea5e9;
         border-radius: 3px;
       }
       .image-container {
@@ -280,13 +280,13 @@ export const printReport = (data: ReportData) => {
       }
       .ai-analysis {
         background-color: #f0f9ff;
-        border: 1px solid #e0f2fe;
+        border: 1px solid #bae6fd;
         border-radius: 8px;
         padding: 12px;
         margin-top: 15px;
       }
       .ai-analysis h3 {
-        color: #0369a1;
+        color: #0284c7;
         margin: 0 0 8px 0;
         font-size: 14px;
       }
@@ -294,7 +294,7 @@ export const printReport = (data: ReportData) => {
         margin-bottom: 12px;
       }
       .ai-section h4 {
-        color: #0369a1;
+        color: #0284c7;
         margin: 0 0 4px 0;
         font-size: 13px;
       }
@@ -305,9 +305,9 @@ export const printReport = (data: ReportData) => {
       .footer {
         margin-top: 20px;
         padding-top: 15px;
-        border-top: 1px solid #e5e7eb;
+        border-top: 1px solid #e2e8f0;
         font-size: 11px;
-        color: #666;
+        color: #64748b;
       }
       p {
         margin: 0 0 8px 0;
