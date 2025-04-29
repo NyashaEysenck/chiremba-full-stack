@@ -29,8 +29,6 @@ import { Switch } from "@/components/ui/switch";
 import { analyzeImage as analyzeImageAPI } from '@/utils/imageAnalysisService';
 import { CONDITION_DETAILS } from '@/utils/imageAnalysisService';
 import { requestLungCancerGradCAM } from '@/utils/gradcamService';
-import { downloadReport, printReport } from '@/utils/reportGenerator';
-import { generateAIResponse } from '@/utils/googleAI';
 
 const ImageDiagnosis = () => {
   const { isAuthenticated } = useAuth();
@@ -63,9 +61,6 @@ const ImageDiagnosis = () => {
   const [gradcamImage, setGradcamImage] = useState<string | null>(null);
   const [isGradcamLoading, setIsGradcamLoading] = useState(false);
   
-  // AI Explanation state
-  const [aiExplanation, setAiExplanation] = useState<string | null>(null);
-  
   // Available models for detection
   const models = [
     { id: "brain-tumor", name: "Brain Tumor Detection" },
@@ -73,18 +68,6 @@ const ImageDiagnosis = () => {
     { id: "pneumonia", name: "Pneumonia Detection" },
     { id: "lung-cancer", name: "Lung Cancer Detection" }
   ];
-  
-  // AI Explanation helper (match logic to src/src/pages/ImageDiagnosis.tsx)
-  const getAIExplanation = async (condition: string, confidence: number, modelType: string) => {
-    const prompt = `As a medical AI assistant, analyze this ${modelType} result:\nCondition: ${condition}\nConfidence: ${confidence}%\n\nPlease provide a concise medical analysis with the following sections:\n1. Condition Overview:\n   What is ${condition}? Describe its key characteristics and medical significance.\n\n2. Patient Impact:\n   How this condition typically affects patients and its common symptoms.\n\n3. Risk Assessment:\n   Severity level based on the findings and factors that might influence the condition.\n\n4. Recommendations:\n   Immediate steps to take, when to seek emergency care, and follow-up care suggestions.\n\n5. Additional Considerations:\n   Related conditions, preventive measures, and lifestyle modifications if applicable.\n\nPlease format your response in a clear, structured way with section headings. Keep each section concise while maintaining all critical information.`;
-    try {
-      const explanation = await generateAIResponse(prompt);
-      return explanation;
-    } catch (error) {
-      console.error('Error getting AI explanation:', error);
-      return 'AI explanation currently unavailable. Please consult with a healthcare professional for detailed information about your condition.';
-    }
-  };
   
   // Clean up function for camera stream
   useEffect(() => {
@@ -536,33 +519,29 @@ const ImageDiagnosis = () => {
     }
   };
   
-  // In analyzeImage, after image analysis, update to match src/src/pages usage:
   const analyzeImage = async () => {
     if (!selectedFile) return;
-
+    
     setIsAnalyzing(true);
-
+    
     try {
       console.log(`Analyzing image with model: ${selectedModel}`);
       console.log(`Image file: ${selectedFile.name}, size: ${selectedFile.size} bytes`);
-
+      
       // Call our backend API service with the image
       const result = await analyzeImageAPI(selectedFile, selectedModel);
       setAnalysisResult(result);
+      
       console.log("Analysis completed successfully:", result);
-
-      // Get AI explanation for the result (sync with src/src/pages)
-      const explanation = await getAIExplanation(
-        result.condition,
-        result.confidence,
-        models.find(m => m.id === selectedModel)?.name || 'AI Detection'
-      );
-      setAiExplanation(explanation);
     } catch (error) {
       console.error('Error analyzing image:', error);
-      let errorMessage = 'An error occurred during image analysis.';
+      
+      // Provide more detailed error feedback to the user
+      let errorMessage = "Failed to analyze the image. Please try again.";
+      
       if (error instanceof Error) {
         errorMessage = error.message;
+        
         // Check for specific error types
         if (errorMessage.includes("fetch")) {
           errorMessage = `Failed to connect to the analysis server. Please make sure the backend server is running at ${import.meta.env.VITE_FASTAPI_URL || 'the configured URL'}.`;
@@ -570,6 +549,7 @@ const ImageDiagnosis = () => {
           errorMessage = "Network error: Please check your internet connection and ensure the backend server is running.";
         }
       }
+      
       toast({
         title: "Analysis Failed",
         description: errorMessage,
@@ -586,18 +566,7 @@ const ImageDiagnosis = () => {
     setIsGradcamLoading(true);
     setGradcamImage(null);
     try {
-      // --- RESTORE ORIGINAL LOGIC: use the original file, not the cropped one ---
-      // In the original, Grad-CAM was called with the uploaded (pre-cropped) image.
-      // So, if cropping is active, use the original file from imageSrc (if possible)
-      // But since imageSrc is a URL, we need to fetch and convert it to a File
-      let fileToSend = selectedFile;
-      // If cropping is active, try to get the original file from imageSrc (if possible)
-      if (isCropping && imageSrc) {
-        const response = await fetch(imageSrc);
-        const blob = await response.blob();
-        fileToSend = new File([blob], 'original-upload.jpg', { type: blob.type });
-      }
-      const gradcam = await requestLungCancerGradCAM(fileToSend);
+      const gradcam = await requestLungCancerGradCAM(selectedFile);
       setGradcamImage(`data:image/png;base64,${gradcam}`);
     } catch (err) {
       toast({
@@ -625,15 +594,6 @@ const ImageDiagnosis = () => {
   useEffect(() => {
     setGradcamImage(null);
   }, [selectedFile, analysisResult, selectedModel]);
-
-  // After analysisResult is set, fetch AI explanation if not already set
-  useEffect(() => {
-    if (analysisResult && analysisResult.condition && analysisResult.confidence && analysisResult.modelType && !aiExplanation) {
-      getAIExplanation(analysisResult.condition, analysisResult.confidence, analysisResult.modelType)
-        .then(setAiExplanation)
-        .catch(() => setAiExplanation(null));
-    }
-  }, [analysisResult]);
 
   return (
     <div className="min-h-screen flex flex-col pattern-bg">
@@ -1009,7 +969,7 @@ const ImageDiagnosis = () => {
                     {/* Move Grad-CAM button here, just below the images */}
                     <div className="flex justify-center mt-4">
                       <button
-                        className="px-4 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 disabled:opacity-60"
+                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60"
                         onClick={handleShowGradcam}
                         disabled={isGradcamLoading || !selectedFile}
                         type="button"
@@ -1202,64 +1162,6 @@ const ImageDiagnosis = () => {
                           <li>Ensure the image shows a complete cross-section of the chest</li>
                           <li>The model works best with axial (horizontal) CT slices</li>
                         </ul>
-                      </div>
-                    )}
-                    {/* Report Generation Buttons */}
-                    {analysisResult && (
-                      <div className="flex flex-col space-y-2 mt-4">
-                        {/* Show loading or error state for AI explanation */}
-                        {!aiExplanation && (
-                          <div className="flex items-center space-x-2 text-blue-600 text-sm">
-                            <Loader2 className="animate-spin h-4 w-4" />
-                            <span>Generating detailed AI analysis...</span>
-                          </div>
-                        )}
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={async () => {
-                              const now = new Date();
-                              const imageData = preview || '';
-                              await downloadReport({
-                                date: now.toLocaleDateString(),
-                                time: now.toLocaleTimeString(),
-                                condition: analysisResult.condition,
-                                confidence: analysisResult.confidence,
-                                description: analysisResult.description,
-                                urgency: analysisResult.urgency,
-                                modelUsed: models.find(m => m.id === selectedModel)?.name || '',
-                                imageData,
-                                alternatives: analysisResult.alternatives,
-                                aiExplanation: aiExplanation || analysisResult.aiExplanation
-                              });
-                            }}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                            disabled={!aiExplanation}
-                          >
-                            Download Report
-                          </button>
-                          <button
-                            onClick={() => {
-                              const now = new Date();
-                              const imageData = preview || '';
-                              printReport({
-                                date: now.toLocaleDateString(),
-                                time: now.toLocaleTimeString(),
-                                condition: analysisResult.condition,
-                                confidence: analysisResult.confidence,
-                                description: analysisResult.description,
-                                urgency: analysisResult.urgency,
-                                modelUsed: models.find(m => m.id === selectedModel)?.name || '',
-                                imageData,
-                                alternatives: analysisResult.alternatives,
-                                aiExplanation: aiExplanation || analysisResult.aiExplanation
-                              });
-                            }}
-                            className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
-                            disabled={!aiExplanation}
-                          >
-                            Print Report
-                          </button>
-                        </div>
                       </div>
                     )}
                   </div>
