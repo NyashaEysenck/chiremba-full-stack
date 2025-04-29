@@ -33,11 +33,8 @@ import { downloadReport, printReport } from '@/utils/reportGenerator';
 import { generateAIResponse } from '@/utils/googleAI';
 
 const getAIExplanation = async (condition: string, confidence: number, modelType: string) => {
-  const prompt = `As a medical AI assistant, analyze this ${modelType} result:
-Condition: ${condition}
-Confidence: ${confidence}%
+  const prompt = `Provide a concise medical analysis for ${condition} (${confidence}% confidence, ${modelType}) with these sections:
 
-Please provide a concise medical analysis with the following sections:
 1. Condition Overview:
    What is ${condition}? Describe its key characteristics and medical significance.
 
@@ -53,7 +50,7 @@ Please provide a concise medical analysis with the following sections:
 5. Additional Considerations:
    Related conditions, preventive measures, and lifestyle modifications if applicable.
 
-Please format your response in a clear, structured way with section headings. Keep each section concise while maintaining all critical information.`;
+Format your response with clear section headings. Keep each section concise while including all critical information. Start immediately with the analysis without any introductory text.`;
 
   try {
     const explanation = await generateAIResponse(prompt);
@@ -63,7 +60,6 @@ Please format your response in a clear, structured way with section headings. Ke
     return 'AI explanation currently unavailable. Please consult with a healthcare professional for detailed information about your condition.';
   }
 };
-
 const ImageDiagnosis = () => {
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
