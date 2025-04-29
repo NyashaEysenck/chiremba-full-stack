@@ -586,7 +586,18 @@ const ImageDiagnosis = () => {
     setIsGradcamLoading(true);
     setGradcamImage(null);
     try {
-      const gradcam = await requestLungCancerGradCAM(selectedFile);
+      // --- RESTORE ORIGINAL LOGIC: use the original file, not the cropped one ---
+      // In the original, Grad-CAM was called with the uploaded (pre-cropped) image.
+      // So, if cropping is active, use the original file from imageSrc (if possible)
+      // But since imageSrc is a URL, we need to fetch and convert it to a File
+      let fileToSend = selectedFile;
+      // If cropping is active, try to get the original file from imageSrc (if possible)
+      if (isCropping && imageSrc) {
+        const response = await fetch(imageSrc);
+        const blob = await response.blob();
+        fileToSend = new File([blob], 'original-upload.jpg', { type: blob.type });
+      }
+      const gradcam = await requestLungCancerGradCAM(fileToSend);
       setGradcamImage(`data:image/png;base64,${gradcam}`);
     } catch (err) {
       toast({
