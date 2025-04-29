@@ -141,8 +141,12 @@ export const CONDITION_DETAILS: Record<string, {
 };
 
 // Utility to poll the backend health endpoint until ready
-async function waitForBackendReady(maxRetries = 10, delayMs = 1000): Promise<boolean> {
-  const healthUrl = `${import.meta.env.VITE_FASTAPI_URL}/health`;
+async function waitForBackendReady(maxRetries = 10, delayMs = 1000, modelType?: string): Promise<boolean> {
+  const baseUrl = modelType === 'skin-infection' 
+    ? import.meta.env.VITE_SKIN_SERVICE_URL 
+    : import.meta.env.VITE_FASTAPI_URL;
+  
+  const healthUrl = `${baseUrl}/health`;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       const res = await fetch(healthUrl, { method: 'GET', mode: 'cors' });
@@ -162,7 +166,7 @@ async function waitForBackendReady(maxRetries = 10, delayMs = 1000): Promise<boo
 }
 
 // Add a new function to test connectivity first
-export async function testServerConnection(file: File): Promise<boolean> {
+export async function testServerConnection(file: File, modelType?: string): Promise<boolean> {
   try {
     // Create a small FormData with the file to test the connection
     const formData = new FormData();
@@ -170,8 +174,12 @@ export async function testServerConnection(file: File): Promise<boolean> {
     
     console.log('Testing connection to server...');
     
+    const baseUrl = modelType === 'skin-infection' 
+      ? import.meta.env.VITE_SKIN_SERVICE_URL 
+      : import.meta.env.VITE_FASTAPI_URL;
+    
     // Use the test endpoint which is lightweight
-    const response = await fetch(`${import.meta.env.VITE_FASTAPI_URL}/test`, {
+    const response = await fetch(`${baseUrl}/test`, {
       method: 'POST',
       body: formData,
       mode: 'cors',
@@ -201,15 +209,18 @@ export async function testServerConnection(file: File): Promise<boolean> {
 export async function analyzeImage(file: File, modelType: string): Promise<any> {
   try {
     // Wait for backend readiness before proceeding (fix for initial connection issue)
-    const backendReady = await waitForBackendReady(10, 1000); // 10 retries, 1s apart
+    const backendReady = await waitForBackendReady(10, 1000, modelType); // 10 retries, 1s apart
     if (!backendReady) {
       throw new Error('The analysis server is still starting up or not ready. Please try again in a moment.');
     }
     // First test server connectivity
-    const serverAvailable = await testServerConnection(file);
+    const serverAvailable = await testServerConnection(file, modelType);
     
     if (!serverAvailable) {
-      throw new Error(`Cannot connect to the analysis server. Please make sure the server is running at ${import.meta.env.VITE_FASTAPI_URL}`);
+      const baseUrl = modelType === 'skin-infection' 
+        ? import.meta.env.VITE_SKIN_SERVICE_URL 
+        : import.meta.env.VITE_FASTAPI_URL;
+      throw new Error(`Cannot connect to the analysis server. Please make sure the server is running at ${baseUrl}`);
     }
     
     const endpoint = API_ENDPOINTS[modelType];
