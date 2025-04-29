@@ -27,8 +27,40 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch"; 
 import { analyzeImage as analyzeImageAPI } from '@/utils/imageAnalysisService';
-import { CONDITION_DETAILS } from '@/utils/imageAnalysisService';
-import { requestLungCancerGradCAM } from '@/utils/gradcamService';
+import { downloadReport, printReport } from '@/utils/reportGenerator';
+import { generateAIResponse } from '@/utils/googleAI';
+
+const getAIExplanation = async (condition: string, confidence: number, modelType: string) => {
+  const prompt = `As a medical AI assistant, analyze this ${modelType} result:
+Condition: ${condition}
+Confidence: ${confidence}%
+
+Please provide a concise medical analysis with the following sections:
+1. Condition Overview:
+   What is ${condition}? Describe its key characteristics and medical significance.
+
+2. Patient Impact:
+   How this condition typically affects patients and its common symptoms.
+
+3. Risk Assessment:
+   Severity level based on the findings and factors that might influence the condition.
+
+4. Recommendations:
+   Immediate steps to take, when to seek emergency care, and follow-up care suggestions.
+
+5. Additional Considerations:
+   Related conditions, preventive measures, and lifestyle modifications if applicable.
+
+Please format your response in a clear, structured way with section headings. Keep each section concise while maintaining all critical information.`;
+
+  try {
+    const explanation = await generateAIResponse(prompt);
+    return explanation;
+  } catch (error) {
+    console.error('Error getting AI explanation:', error);
+    return 'AI explanation currently unavailable. Please consult with a healthcare professional for detailed information about your condition.';
+  }
+};
 
 const ImageDiagnosis = () => {
   const { isAuthenticated } = useAuth();
@@ -56,10 +88,6 @@ const ImageDiagnosis = () => {
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
   const [isCropping, setIsCropping] = useState(false);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
-  
-  // Grad-CAM state
-  const [gradcamImage, setGradcamImage] = useState<string | null>(null);
-  const [isGradcamLoading, setIsGradcamLoading] = useState(false);
   
   // Available models for detection
   const models = [
@@ -416,32 +444,22 @@ const ImageDiagnosis = () => {
         : completedCrop.height * scaleY,
     };
     
-    // Set canvas dimensions to match the original image size if crop dimensions match
-    const isFullCrop = Math.abs(pixelCrop.width - image.naturalWidth) < 1 && 
-                      Math.abs(pixelCrop.height - image.naturalHeight) < 1;
+    // Set canvas dimensions to crop size
+    canvas.width = pixelCrop.width;
+    canvas.height = pixelCrop.height;
     
-    if (isFullCrop) {
-      canvas.width = image.naturalWidth;
-      canvas.height = image.naturalHeight;
-      ctx?.drawImage(image, 0, 0);
-    } else {
-      // Set canvas dimensions to crop size
-      canvas.width = pixelCrop.width;
-      canvas.height = pixelCrop.height;
-      
-      // Draw the cropped image
-      ctx.drawImage(
-        image,
-        pixelCrop.x,
-        pixelCrop.y,
-        pixelCrop.width,
-        pixelCrop.height,
-        0,
-        0,
-        pixelCrop.width,
-        pixelCrop.height
-      );
-    }
+    // Draw the cropped image
+    ctx.drawImage(
+      image,
+      pixelCrop.x,
+      pixelCrop.y,
+      pixelCrop.width,
+      pixelCrop.height,
+      0,
+      0,
+      pixelCrop.width,
+      pixelCrop.height
+    );
     
     // Convert to blob and create a File object
     canvas.toBlob((blob) => {
@@ -454,29 +472,28 @@ const ImageDiagnosis = () => {
       }
     }, 'image/jpeg', 0.85);
   };
+  
   const cancelCropping = () => {
     setIsCropping(false);
     setImageSrc(null);
   };
   
   // Function to select the entire image for initial crop
-  const centerAspectCrop = (mediaWidth: number, mediaHeight: number): PixelCrop => {
+  const centerAspectCrop = (mediaWidth: number, mediaHeight: number) => {
     return {
-      unit: 'px',
+      unit: '%' as '%',
       x: 0,
       y: 0,
-      width: mediaWidth,
-      height: mediaHeight
+      width: 100,
+      height: 100
     };
   };
   
-  
   const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = e.currentTarget;
-    setCrop(centerAspectCrop(img.naturalWidth, img.naturalHeight));
-    setCompletedCrop(centerAspectCrop(img.naturalWidth, img.naturalHeight));
+    const { width, height } = e.currentTarget;
+    // Initialize with a centered crop without aspect ratio constraint
+    setCrop(centerAspectCrop(width, height));
   };
-  
   
   const capturePhoto = () => {
     if (videoRef.current && canvasRef.current) {
@@ -530,8 +547,18 @@ const ImageDiagnosis = () => {
       
       // Call our backend API service with the image
       const result = await analyzeImageAPI(selectedFile, selectedModel);
-      setAnalysisResult(result);
       
+      // Get AI explanation for the result
+      const explanation = await getAIExplanation(
+        result.condition,
+        result.confidence,
+        models.find(m => m.id === selectedModel)?.name || 'AI Detection'
+      );
+      
+      // Add the explanation to the result
+      result.aiExplanation = explanation;
+      
+      setAnalysisResult(result);
       console.log("Analysis completed successfully:", result);
     } catch (error) {
       console.error('Error analyzing image:', error);
@@ -560,25 +587,6 @@ const ImageDiagnosis = () => {
     }
   };
   
-  // Handler to request Grad-CAM for lung cancer
-  const handleShowGradcam = async () => {
-    if (!selectedFile) return;
-    setIsGradcamLoading(true);
-    setGradcamImage(null);
-    try {
-      const gradcam = await requestLungCancerGradCAM(selectedFile);
-      setGradcamImage(`data:image/png;base64,${gradcam}`);
-    } catch (err) {
-      toast({
-        title: 'Grad-CAM Error',
-        description: err instanceof Error ? err.message : 'Failed to generate Grad-CAM',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsGradcamLoading(false);
-    }
-  };
-  
   // Redirect if not authenticated
   if (!isAuthenticated) {
     toast({
@@ -590,11 +598,6 @@ const ImageDiagnosis = () => {
     return null;
   }
   
-  // Whenever a new prediction is made or image changes, clear Grad-CAM
-  useEffect(() => {
-    setGradcamImage(null);
-  }, [selectedFile, analysisResult, selectedModel]);
-
   return (
     <div className="min-h-screen flex flex-col pattern-bg">
       <Navbar />
@@ -612,16 +615,19 @@ const ImageDiagnosis = () => {
                 muted
                 className="w-full h-full object-cover"
               />
+              
               {/* Subtle camera guidelines overlay */}
               <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-64 h-64 border border-white/30 rounded-full"></div>
                 </div>
               </div>
+              
               {/* Minimal header bar */}
               <div className="absolute top-0 left-0 right-0 p-3 flex justify-between items-center z-10">
                 <div className="flex items-center bg-black/50 px-3 py-1.5 rounded-full">
                   <span className="text-sm text-white font-medium">Medical Image Capture</span>
+                  
                   {/* Camera selection dropdown - only if multiple cameras */}
                   {availableCameras.length > 1 && (
                     <select
@@ -637,6 +643,7 @@ const ImageDiagnosis = () => {
                     </select>
                   )}
                 </div>
+                
                 <button
                   onClick={() => {
                     console.log("Close camera button clicked");
@@ -648,6 +655,7 @@ const ImageDiagnosis = () => {
                   <X className="h-4 w-4" />
                 </button>
               </div>
+              
               {/* Minimal camera controls */}
               <div className="absolute bottom-4 left-0 right-0 flex justify-center">
                 <button
@@ -663,41 +671,44 @@ const ImageDiagnosis = () => {
                   </div>
                 </button>
               </div>
+              
               {/* Subtle hint text */}
               <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent pointer-events-none">
                 <p className="text-xs text-center text-white/70">
                   Center the affected area and click to capture
                 </p>
               </div>
-              {/* Camera loading indicator */}
-              {isCameraLoading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-20">
-                  <div className="text-center p-6">
-                    <Loader2 className="h-10 w-10 text-terracotta mx-auto animate-spin mb-4" />
-                    <p className="mt-3 text-white font-medium">Initializing camera...</p>
-                  </div>
-                </div>
-              )}
-              {/* Camera error message */}
-              {cameraError && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-30">
-                  <div className="text-center p-6 bg-white rounded-lg max-w-md">
-                    <AlertCircle className="h-10 w-10 mx-auto mb-2 text-red-500" />
-                    <h3 className="text-lg font-medium">Camera Error</h3>
-                    <p className="mt-2 text-sm text-gray-600">{cameraError}</p>
-                    <button 
-                      onClick={() => {
-                        console.log("Error close button clicked");
-                        stopCamera();
-                      }}
-                      className="mt-4 px-4 py-2 bg-gray-100 text-gray-800 rounded-md font-medium hover:bg-gray-200 transition-colors"
-                    >
-                      Close
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
+            
+            {/* Camera loading indicator */}
+            {isCameraLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-20">
+                <div className="text-center p-6">
+                  <Loader2 className="h-10 w-10 text-terracotta mx-auto animate-spin mb-4" />
+                  <p className="mt-3 text-white font-medium">Initializing camera...</p>
+                </div>
+              </div>
+            )}
+            
+            {/* Camera error message */}
+            {cameraError && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-30">
+                <div className="text-center p-6 bg-white rounded-lg max-w-md">
+                  <AlertCircle className="h-10 w-10 mx-auto mb-2 text-red-500" />
+                  <h3 className="text-lg font-medium">Camera Error</h3>
+                  <p className="mt-2 text-sm text-gray-600">{cameraError}</p>
+                  <button 
+                    onClick={() => {
+                      console.log("Error close button clicked");
+                      stopCamera();
+                    }}
+                    className="mt-4 px-4 py-2 bg-gray-100 text-gray-800 rounded-md font-medium hover:bg-gray-200 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -707,7 +718,7 @@ const ImageDiagnosis = () => {
         <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center">
           <div className="w-full max-w-4xl bg-white rounded-lg overflow-hidden shadow-xl">
             <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-lg font-medium text-gray-900">Adjust Image</h3>
+              <h3 className="text-lg font-medium text-gray-800">Adjust Image</h3>
               <button 
                 onClick={cancelCropping}
                 className="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full transition-colors"
@@ -933,73 +944,26 @@ const ImageDiagnosis = () => {
               </div>
             ) : (
               <div className="space-y-8">
-                {/* Main image display area: show both original and Grad-CAM side by side if available and lung-cancer selected */}
-                {selectedModel === 'lung-cancer' && analysisResult ? (
-                  <>
-                    <div className="relative flex flex-row gap-8 justify-center items-center bg-gray-50 rounded-lg border border-gray-200" style={{ height: '400px' }}>
-                      {/* Original Image */}
-                      <div className="flex flex-col items-center justify-center h-full w-1/2">
-                        <img 
-                          src={preview || ''} 
-                          alt="Original" 
-                          className="object-contain max-h-[350px] max-w-full rounded shadow border border-gray-200 bg-white p-2" 
-                          style={{ width: '100%', height: '350px' }}
-                        />
-                        <span className="text-xs text-gray-500 mt-2">Original Image</span>
-                      </div>
-                      {/* Grad-CAM Image (only show if available) */}
-                      {gradcamImage && (
-                        <div className="flex flex-col items-center justify-center h-full w-1/2">
-                          <img 
-                            src={gradcamImage} 
-                            alt="AI Focus (Grad-CAM)" 
-                            className="object-contain max-h-[350px] max-w-full rounded shadow border border-blue-300 bg-white p-2" 
-                            style={{ width: '100%', height: '350px' }}
-                          />
-                          <span className="text-xs text-blue-600 mt-2">AI Focus (Grad-CAM)</span>
-                        </div>
-                      )}
-                      <button
-                        onClick={clearSelectedFile}
-                        className="absolute top-2 right-2 p-1 bg-gray-800 bg-opacity-70 text-white rounded-full z-10"
-                      >
-                        <X className="h-5 w-5" />
-                      </button>
-                    </div>
-                    {/* Move Grad-CAM button here, just below the images */}
-                    <div className="flex justify-center mt-4">
-                      <button
-                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60"
-                        onClick={handleShowGradcam}
-                        disabled={isGradcamLoading || !selectedFile}
-                        type="button"
-                      >
-                        {isGradcamLoading ? 'Analyzing what the AI saw...' : gradcamImage ? 'Regenerate Grad-CAM' : 'See what the AI saw'}
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <div className="relative">
-                    {/* Default: Show just the uploaded/cropped image */}
-                    <div className="rounded-lg border border-gray-200 flex items-center justify-center bg-gray-50" style={{ height: "400px" }}>
-                      <img 
-                        src={preview} 
-                        alt="Selected" 
-                        className="max-w-full max-h-full object-contain p-2"
-                      />
-                    </div>
-                    <button
-                      onClick={clearSelectedFile}
-                      className="absolute top-2 right-2 p-1 bg-gray-800 bg-opacity-70 text-white rounded-full"
-                    >
-                      <X className="h-5 w-5" />
-                    </button>
-                    <div className="mt-2 text-sm text-gray-600">
-                      {selectedFile?.name}
-                      {selectedFile && <span className="text-gray-400 ml-1">({Math.round(selectedFile.size / 1024)} KB)</span>}
-                    </div>
+                <div className="relative">
+                  {/* Updated container with fixed height and better display properties */}
+                  <div className="rounded-lg border border-gray-200 flex items-center justify-center bg-gray-50" style={{ height: "400px" }}>
+                    <img 
+                      src={preview} 
+                      alt="Selected" 
+                      className="max-w-full max-h-full object-contain p-2"
+                    />
                   </div>
-                )}
+                  <button
+                    onClick={clearSelectedFile}
+                    className="absolute top-2 right-2 p-1 bg-gray-800 bg-opacity-70 text-white rounded-full"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                  <div className="mt-2 text-sm text-gray-600">
+                    {selectedFile?.name}
+                    {selectedFile && <span className="text-gray-400 ml-1">({Math.round(selectedFile.size / 1024)} KB)</span>}
+                  </div>
+                </div>
                 
                 {!analysisResult && !isAnalyzing && (
                   <div className="flex justify-center">
@@ -1061,6 +1025,7 @@ const ImageDiagnosis = () => {
                               {analysisResult.condition === 'Normal' ? 'No pneumonia detected' : 'Pneumonia detected'}
                             </span>
                           )}
+                          
                           {/* Low confidence warning */}
                           {analysisResult.lowConfidence && (
                             <span className="ml-2 px-2 py-1 text-xs font-normal rounded bg-yellow-100 text-yellow-800">
@@ -1068,12 +1033,14 @@ const ImageDiagnosis = () => {
                             </span>
                           )}
                         </h2>
+                        
                         {/* Display model info for skin infection */}
                         {selectedModel === 'skin-infection' && analysisResult.modelUsed && (
                           <div className="mt-1 text-xs font-medium text-indigo-600">
                             Using {analysisResult.modelUsed} model
                           </div>
                         )}
+                        
                         <p className="mt-1 text-gray-600">{analysisResult.description}</p>
                         <div className="mt-3 flex items-center">
                           <span className="text-sm font-medium text-gray-700">Confidence:</span>
@@ -1100,6 +1067,103 @@ const ImageDiagnosis = () => {
                         </div>
                       </div>
                     </div>
+                    
+                    {/* AI Explanation Section */}
+                    <div className="mt-6 p-4 bg-indigo-50 rounded-lg border border-indigo-100">
+                      <div className="flex">
+                        <Info className="h-5 w-5 text-indigo-700 mr-2 flex-shrink-0 mt-1" />
+                        <div className="w-full">
+                          <h3 className="text-sm font-medium text-indigo-800">AI Detailed Analysis</h3>
+                          <div className="mt-2 text-sm text-indigo-700 space-y-4">
+                            {analysisResult.aiExplanation ? (
+                              <div className="prose prose-indigo max-w-none">
+                                {analysisResult.aiExplanation.split('\n').map((paragraph, index) => {
+                                  // Check if this is a section header
+                                  if (paragraph.match(/^\d+\.\s+[A-Za-z\s]+:/)) {
+                                    return (
+                                      <h4 key={index} className="text-indigo-900 font-medium mt-4 first:mt-0">
+                                        {paragraph.replace(/^\d+\.\s+/, '')}
+                                      </h4>
+                                    );
+                                  }
+                                  // Regular paragraph
+                                  else if (paragraph.trim() && !paragraph.trim().startsWith('*')) {
+                                    return (
+                                      <p key={index} className="text-indigo-800">
+                                        {paragraph}
+                                      </p>
+                                    );
+                                  }
+                                  return null;
+                                })}
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-center p-4">
+                                <Loader2 className="h-6 w-6 text-indigo-600 animate-spin mr-2" />
+                                <p>Generating detailed AI analysis...</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Report Generation Buttons */}
+                    <div className="mt-6 flex justify-end space-x-4">
+                      <button
+                        onClick={() => {
+                          const now = new Date();
+                          // Convert the preview image to base64
+                          const imageData = preview || '';
+                          
+                          downloadReport({
+                            date: now.toLocaleDateString(),
+                            time: now.toLocaleTimeString(),
+                            condition: analysisResult.condition,
+                            confidence: analysisResult.confidence,
+                            description: analysisResult.description,
+                            urgency: analysisResult.urgency,
+                            modelUsed: models.find(m => m.id === selectedModel)?.name,
+                            imageData: imageData,
+                            alternatives: analysisResult.alternatives,
+                            aiExplanation: analysisResult.aiExplanation
+                          });
+                        }}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center"
+                      >
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Download Report
+                      </button>
+                      <button
+                        onClick={() => {
+                          const now = new Date();
+                          // Convert the preview image to base64
+                          const imageData = preview || '';
+                          
+                          printReport({
+                            date: now.toLocaleDateString(),
+                            time: now.toLocaleTimeString(),
+                            condition: analysisResult.condition,
+                            confidence: analysisResult.confidence,
+                            description: analysisResult.description,
+                            urgency: analysisResult.urgency,
+                            modelUsed: models.find(m => m.id === selectedModel)?.name,
+                            imageData: imageData,
+                            alternatives: analysisResult.alternatives,
+                            aiExplanation: analysisResult.aiExplanation
+                          });
+                        }}
+                        className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors flex items-center"
+                      >
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                        </svg>
+                        Print Report
+                      </button>
+                    </div>
+                    
                     {/* Display alternative diagnoses for skin infection */}
                     {selectedModel === 'skin-infection' && analysisResult.alternatives && analysisResult.alternatives.length > 0 && (
                       <div className="mt-6 p-4 bg-amber-50 rounded-lg border border-amber-100">
@@ -1130,40 +1194,11 @@ const ImageDiagnosis = () => {
                         </p>
                       </div>
                     )}
-                    <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
-                      <div className="flex">
-                        <Info className="h-5 w-5 text-blue-700 mr-2 flex-shrink-0" />
-                        <div>
-                          <h3 className="text-sm font-medium text-blue-800">Recommendations</h3>
-                          <p className="mt-1 text-sm text-blue-700">
-                            {analysisResult.recommendations}
-                          </p>
-                        </div>
-                      </div>
+                    
+                    <div className="mt-4 text-xs text-gray-500">
+                      <strong>Disclaimer:</strong> This is an AI-assisted analysis and not a definitive medical diagnosis. 
+                      Please consult with a qualified healthcare professional for proper evaluation and treatment.
                     </div>
-                    {/* Additional tips for nail fungus specific to skin infections */}
-                    {selectedModel === 'skin-infection' && (
-                      <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                        <h3 className="text-sm font-medium text-gray-800 mb-1">Diagnosis Tips</h3>
-                        <ul className="text-xs text-gray-600 list-disc pl-5 space-y-1">
-                          <li>Nail fungus and impetigo can sometimes look similar in images</li>
-                          <li>For nail fungus detection, ensure your image clearly shows the affected nail</li>
-                          <li>Try taking the photo in natural light without shadows</li>
-                          <li>Include both the nail and some surrounding skin for better analysis</li>
-                        </ul>
-                      </div>
-                    )}
-                    {/* Additional tips for lung cancer detection */}
-                    {selectedModel === 'lung-cancer' && (
-                      <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                        <h3 className="text-sm font-medium text-gray-800 mb-1">Lung Cancer CT Scan Guidelines</h3>
-                        <ul className="text-xs text-gray-600 list-disc pl-5 space-y-1">
-                          <li>Use clear, high-resolution CT scan images of the lungs</li>
-                          <li>Ensure the image shows a complete cross-section of the chest</li>
-                          <li>The model works best with axial (horizontal) CT slices</li>
-                        </ul>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
