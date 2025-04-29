@@ -554,7 +554,7 @@ app.post('/api/ai/openai/tts', async (req, res) => {
   try {
     const { text } = req.body;
     const openai = new OpenAI({ apiKey: process.env.VITE_OPENAI_API_KEY });
-    const response = await openai.audio.speech.create({ model: 'tts-1', voice: 'sky', input: text });
+    const response = await openai.audio.speech.create({ model: 'tts-1', voice: 'nova', input: text });
     const arrayBuffer = await response.arrayBuffer();
     res.set('Content-Type', 'audio/mpeg');
     res.send(Buffer.from(arrayBuffer));
