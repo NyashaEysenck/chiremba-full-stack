@@ -967,7 +967,7 @@ const ImageDiagnosis = () => {
                       </button>
                     </div>
                     {/* Move Grad-CAM button here, just below the images */}
-                    <div className="flex justify-center mt-4">
+                    {/* <div className="flex justify-center mt-4">
                       <button
                         className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60"
                         onClick={handleShowGradcam}
@@ -976,7 +976,7 @@ const ImageDiagnosis = () => {
                       >
                         {isGradcamLoading ? 'Analyzing what the AI saw...' : gradcamImage ? 'Regenerate Grad-CAM' : 'See what the AI saw'}
                       </button>
-                    </div>
+                    </div> */}
                   </>
                 ) : (
                   <div className="relative">
