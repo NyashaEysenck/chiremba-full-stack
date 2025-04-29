@@ -74,7 +74,7 @@ const ImageDiagnosis = () => {
     { id: "lung-cancer", name: "Lung Cancer Detection" }
   ];
   
-  // AI Explanation helper
+  // AI Explanation helper (match logic to src/src/pages/ImageDiagnosis.tsx)
   const getAIExplanation = async (condition: string, confidence: number, modelType: string) => {
     const prompt = `As a medical AI assistant, analyze this ${modelType} result:\nCondition: ${condition}\nConfidence: ${confidence}%\n\nPlease provide a concise medical analysis with the following sections:\n1. Condition Overview:\n   What is ${condition}? Describe its key characteristics and medical significance.\n\n2. Patient Impact:\n   How this condition typically affects patients and its common symptoms.\n\n3. Risk Assessment:\n   Severity level based on the findings and factors that might influence the condition.\n\n4. Recommendations:\n   Immediate steps to take, when to seek emergency care, and follow-up care suggestions.\n\n5. Additional Considerations:\n   Related conditions, preventive measures, and lifestyle modifications if applicable.\n\nPlease format your response in a clear, structured way with section headings. Keep each section concise while maintaining all critical information.`;
     try {
@@ -536,29 +536,33 @@ const ImageDiagnosis = () => {
     }
   };
   
+  // In analyzeImage, after image analysis, update to match src/src/pages usage:
   const analyzeImage = async () => {
     if (!selectedFile) return;
-    
+
     setIsAnalyzing(true);
-    
+
     try {
       console.log(`Analyzing image with model: ${selectedModel}`);
       console.log(`Image file: ${selectedFile.name}, size: ${selectedFile.size} bytes`);
-      
+
       // Call our backend API service with the image
       const result = await analyzeImageAPI(selectedFile, selectedModel);
       setAnalysisResult(result);
-      
       console.log("Analysis completed successfully:", result);
+
+      // Get AI explanation for the result (sync with src/src/pages)
+      const explanation = await getAIExplanation(
+        result.condition,
+        result.confidence,
+        models.find(m => m.id === selectedModel)?.name || 'AI Detection'
+      );
+      setAiExplanation(explanation);
     } catch (error) {
       console.error('Error analyzing image:', error);
-      
-      // Provide more detailed error feedback to the user
-      let errorMessage = "Failed to analyze the image. Please try again.";
-      
+      let errorMessage = 'An error occurred during image analysis.';
       if (error instanceof Error) {
         errorMessage = error.message;
-        
         // Check for specific error types
         if (errorMessage.includes("fetch")) {
           errorMessage = `Failed to connect to the analysis server. Please make sure the backend server is running at ${import.meta.env.VITE_FASTAPI_URL || 'the configured URL'}.`;
@@ -566,7 +570,6 @@ const ImageDiagnosis = () => {
           errorMessage = "Network error: Please check your internet connection and ensure the backend server is running.";
         }
       }
-      
       toast({
         title: "Analysis Failed",
         description: errorMessage,
