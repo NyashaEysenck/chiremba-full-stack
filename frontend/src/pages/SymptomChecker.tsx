@@ -6,7 +6,7 @@ import { ArrowRight, Heart, Search, Info, AlertCircle, Pill, Clock, HelpCircle, 
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { analyzeHealthSymptoms } from '@/utils/openAI';
+import { analyzeHealthSymptoms } from '@/utils/googleAI';
 
 const SymptomChecker = () => {
   const { toast } = useToast();

@@ -304,33 +304,31 @@ app.post('/api/users/staff', authenticateToken, isAdmin, [
 
   try {
     // Check if user already exists
-    const emailExists = await User.findOne({ email: req.body.email });
-    if (emailExists) {
-      return res.status(400).json({ message: 'Email already exists' });
+    const existingUser = await User.findOne({ email: req.body.email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Generate password setup token and expiry
-    const crypto = await import('crypto');
-    const token = crypto.randomBytes(32).toString('hex');
-    const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    // Generate temporary password reset token
+    const token = jwt.sign({ email: req.body.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-    // Create new staff user with pending status and no password
+    // Create new user with staff role
     const user = new User({
       email: req.body.email,
-      password: null,
       name: req.body.name,
       role: 'staff',
       status: 'pending',
       passwordResetToken: token,
-      passwordResetExpires: expiry
+      passwordResetExpires: Date.now() + 60 * 60 * 1000 // 1 hour
     });
 
-    // Save user to database
     const savedUser = await user.save();
 
-    // Send password setup email to user with link containing token
+    // Send welcome email with password setup link
+    const setupLink = `${FRONTEND_URL}/setup-password?token=${token}`;
+    
+    // Send email
     try {
-      const setupLink = `${FRONTEND_URL}/setup-password?token=${token}`;
       await transporter.sendMail({
         from: EMAIL_FROM,
         to: req.body.email,
@@ -355,12 +353,12 @@ app.post('/api/users/staff', authenticateToken, isAdmin, [
           </tr>
           <tr>
             <td align="center" style="padding-bottom: 18px;">
-              <h1 style="margin: 0; font-size: 1.8rem; color: #e05a47;">Welcome to Chiremba!</h1>
+              <h1 style="margin: 0; font-size: 1.8rem; color: #e05a47;">Welcome to Chiremba</h1>
             </td>
           </tr>
           <tr>
             <td style="padding-bottom: 18px; color: #444; font-size: 1.05rem; line-height: 1.6;">
-              <p style="margin: 0 0 12px 0;">You have been invited to join the Chiremba platform. To activate your account, please set your password by clicking the button below. This link will expire in 1 hour for your security.</p>
+              <p style="margin: 0 0 12px 0;">You've been invited to join Chiremba as a staff member. To get started, please set up your password by clicking the button below. This link will expire in 1 hour for your security.</p>
             </td>
           </tr>
           <tr>
@@ -387,18 +385,130 @@ app.post('/api/users/staff', authenticateToken, isAdmin, [
         `,
       });
     } catch (err) {
-      console.error('Error sending setup email:', err);
+      console.error('Error sending welcome email:', err);
+      // Continue with the response even if email fails
     }
 
     res.status(201).json({
+      message: 'Staff user created successfully',
       user: {
         id: savedUser._id,
         email: savedUser.email,
         name: savedUser.name,
-        role: savedUser.role,
-        status: savedUser.status
-      },
-      message: 'User created. Password setup email sent.'
+        role: savedUser.role
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Create an admin user (admin only)
+app.post('/api/users/admin', authenticateToken, isAdmin, [
+  body('email').isEmail().withMessage('Enter a valid email'),
+  body('name').notEmpty().withMessage('Name is required')
+], async (req, res) => {
+  // Validate request
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  try {
+    // Check if user already exists
+    const existingUser = await User.findOne({ email: req.body.email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    // Generate temporary password reset token
+    const token = jwt.sign({ email: req.body.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    // Create new user with admin role
+    const user = new User({
+      email: req.body.email,
+      name: req.body.name,
+      role: 'admin',  // Set role to admin instead of staff
+      status: 'pending',
+      passwordResetToken: token,
+      passwordResetExpires: Date.now() + 60 * 60 * 1000 // 1 hour
+    });
+
+    const savedUser = await user.save();
+
+    // Send welcome email with password setup link
+    const setupLink = `${FRONTEND_URL}/setup-password?token=${token}`;
+    
+    // Send email
+    try {
+      await transporter.sendMail({
+        from: EMAIL_FROM,
+        to: req.body.email,
+        subject: 'Welcome to Chiremba – Set Up Your Admin Account',
+        html: `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Set Up Your Chiremba Admin Account</title>
+</head>
+<body style="background: #f9f9f9; font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background: #f9f9f9; padding: 40px 0;">
+    <tr>
+      <td align="center">
+        <table width="100%" style="max-width: 480px; background: #fff; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.06); padding: 32px 28px;">
+          <tr>
+            <td align="center" style="padding-bottom: 18px;">
+              <img src="https://imgur.com/pG9BKgz.png" width="64" height="64" alt="Chiremba Logo" style="border-radius: 8px;">
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding-bottom: 18px;">
+              <h1 style="margin: 0; font-size: 1.8rem; color: #e05a47;">Welcome to Chiremba</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding-bottom: 18px; color: #444; font-size: 1.05rem; line-height: 1.6;">
+              <p style="margin: 0 0 12px 0;">You've been invited to join Chiremba as an administrator. To get started, please set up your password by clicking the button below. This link will expire in 1 hour for your security.</p>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding-bottom: 24px;">
+              <a href="${setupLink}" style="display: inline-block; background: #e05a47; color: #fff; font-weight: 600; padding: 14px 32px; border-radius: 6px; text-decoration: none; font-size: 1.15rem; letter-spacing: 0.03em; box-shadow: 0 2px 8px rgba(224,90,71,0.12);">Set Up Password</a>
+            </td>
+          </tr>
+          <tr>
+            <td style="color: #888; font-size: 0.95rem; padding-bottom: 12px;">
+              <p style="margin: 0;">If you did not expect this email, you can safely ignore it.</p>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding-top: 12px; color: #bbb; font-size: 0.85rem;">
+              &copy; ${new Date().getFullYear()} Chiremba. All rights reserved.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+        `,
+      });
+    } catch (err) {
+      console.error('Error sending welcome email:', err);
+      // Continue with the response even if email fails
+    }
+
+    res.status(201).json({
+      message: 'Admin user created successfully',
+      user: {
+        id: savedUser._id,
+        email: savedUser.email,
+        name: savedUser.name,
+        role: savedUser.role
+      }
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
