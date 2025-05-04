@@ -115,6 +115,7 @@ npm test
   <img src="app_previews/diagnosis2.png" width="200"/>
   <img src="app_previews/diagnosis3.png" width="200"/>
 </div>
+
 ## Contributing
 
 Please follow the established coding style and commit message conventions when contributing to this project.
