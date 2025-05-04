@@ -80,6 +80,36 @@ Run the test suite:
 ```bash
 npm test
 ```
+## Previews
+
+### **Home Page - Symptom Checker**
+<div style="display: flex; gap: 10px;">
+  <img src="app_previews/symptom1.png" width="200"/>
+  <img src="app_previews/symptom2.png" width="200"/>
+  <img src="app_previews/symptom3.png" width="200"/>
+</div>
+
+---
+
+### **Virtual Chat**
+<div style="display: flex; gap: 10px;">
+  <img src="app_previews/chat1.png" width="200"/>
+  <img src="app_previews/chat2.png" width="200"/>
+</div>
+
+---
+
+### **Login**
+<img src="app_previews/login.png" width="200"/>
+
+---
+
+### **Image Diagnosis**
+<div style="display: flex; gap: 10px;">
+  <img src="app_previews/diagnosis1.png" width="200"/>
+  <img src="app_previews/diagnosis2.png" width="200"/>
+  <img src="app_previews/diagnosis3.png" width="200"/>
+</div>
 
 ## Contributing
 
