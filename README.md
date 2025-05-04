@@ -82,7 +82,12 @@ npm test
 ```
 ## Previews
 
-### **Home Page - Symptom Checker**
+### **Home Page**
+<img src="app_previews/home.png" width="200"/>
+
+---
+
+### **Symptom Checker**
 <div style="display: flex; gap: 10px;">
   <img src="app_previews/symptom1.png" width="200"/>
   <img src="app_previews/symptom2.png" width="200"/>
@@ -110,7 +115,6 @@ npm test
   <img src="app_previews/diagnosis2.png" width="200"/>
   <img src="app_previews/diagnosis3.png" width="200"/>
 </div>
-
 ## Contributing
 
 Please follow the established coding style and commit message conventions when contributing to this project.
