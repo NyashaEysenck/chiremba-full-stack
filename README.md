@@ -24,7 +24,7 @@ see img diagnosis backend : https://github.com/NyashaEysenck/chiremba-ai-backend
 - React with TypeScript
 - Material-UI for components
 - Axios for API communication
-- Jest for testing
+
 
 ### Setup
 
@@ -44,6 +44,7 @@ npm start
 
 4. Build for production:
 ```bash
+cd frontend
 npm run build
 ```
 
@@ -53,32 +54,11 @@ npm run build
 - `REACT_APP_IMAGE_DIAGNOSIS_URL`: AI backend service endpoint
 - `REACT_APP_API_KEY`: API authentication key (if required)
 
-## Deployment
-
-The application can be deployed using the provided configuration files:
-
-1. Docker deployment:
-```bash
-docker-compose up -d
-```
-
-2. Manual deployment:
-   - Build the frontend
-   - Configure Nginx using the provided configuration
-   - Set up SSL certificates
-   - Configure reverse proxy for backend services
 
 ## Directory Structure
 
 - `/frontend`: React application source code
-
-
-## Testing
-
-Run the test suite:
-```bash
-npm test
-```
+- 
 ## Previews
 
 ### **Home Page**
