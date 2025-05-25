@@ -5,6 +5,7 @@ This directory contains the frontend application and deployment configurations f
 ## Frontend Application
 
 A modern React-based web application that provides an intuitive interface for medical image analysis.
+see img diagnosis backend : https://github.com/NyashaEysenck/chiremba-ai-backend-image-diagnosis
 
 ### Features
 
@@ -70,9 +71,7 @@ docker-compose up -d
 ## Directory Structure
 
 - `/frontend`: React application source code
-- `/nginx`: Nginx configuration files
-- `/scripts`: Deployment and maintenance scripts
-- `/config`: Configuration files for different environments
+
 
 ## Testing
 
