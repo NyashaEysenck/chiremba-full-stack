@@ -39,7 +39,7 @@ npm install
 
 3. Start development server:
 ```bash
-npm start
+node index
 ```
 
 4. Build for production:
